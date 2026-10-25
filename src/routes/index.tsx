@@ -92,7 +92,7 @@ function Home() {
                 <Link
                   to={r.status === "completed" ? "/report/$reviewId" : "/review"}
                   params={{ reviewId: r.id }}
-                  search={r.status === "completed" ? undefined : { week: r.weekStart }}
+                  search={r.status === "completed" ? {} : { week: r.weekStart }}
                   className="flex justify-between px-5 py-4 hover:bg-muted"
                 >
                   <span>{formatWeek(r.weekStart)}</span>

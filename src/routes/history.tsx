@@ -34,7 +34,7 @@ function History() {
               <Link
                 to={r.status === "completed" ? "/report/$reviewId" : "/review"}
                 params={{ reviewId: r.id }}
-                search={r.status === "completed" ? undefined : { week: r.weekStart }}
+                search={r.status === "completed" ? {} : { week: r.weekStart }}
                 className="block rounded-xl border bg-card p-5 hover:shadow-soft"
               >
                 <div className="flex justify-between">

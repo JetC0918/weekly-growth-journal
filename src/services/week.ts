@@ -9,7 +9,7 @@ export function weekStartOf(date: Date = new Date()): string {
 }
 
 export function formatWeek(weekStart: string): string {
-  const [y, m, d] = weekStart.split("-").map(Number);
+  const [y = 1970, m = 1, d = 1] = weekStart.split("-").map(Number);
   const start = new Date(y, m - 1, d);
   const end = new Date(y, m - 1, d + 6);
   const fmt = (x: Date) => x.toLocaleDateString("en-US", { month: "short", day: "numeric" });

@@ -33,7 +33,7 @@ describe("mock GrowthService", () => {
     );
     const report = await s.completeReview(r.id);
     expect((await s.getReview(r.id))?.status).toBe("completed");
-    expect(report.strengths[0].evidence).toBe("Shipped the release.");
+    expect(report.strengths[0]?.evidence).toBe("Shipped the release.");
     expect(report.proposedAction).toBe("Plan Monday mornings.");
   });
 
@@ -57,7 +57,7 @@ describe("mock GrowthService", () => {
     const s = createMockService();
     const r = await s.saveReview(input("2026-10-19", { wentWell: "Good talk with Sam." }));
     const rep = await s.completeReview(r.id);
-    const id = rep.strengths[0].id;
+    const id = rep.strengths[0]!.id;
     await s.updateInsight(r.id, "strengths", id, { status: "rejected" });
     const after = await s.updateInsight(r.id, "strengths", id, { correction: "It was with Alex." });
     expect(after.strengths[0]).toMatchObject({ status: "rejected", correction: "It was with Alex." });

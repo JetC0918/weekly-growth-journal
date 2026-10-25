@@ -28,7 +28,7 @@ export interface Review {
   answers: Answers;
   freeWriting: string;
   followUps: FollowUp[];
-  previousAction?: PreviousActionCheck;
+  previousAction?: PreviousActionCheck | undefined;
   status: "draft" | "completed";
   createdAt: string;
   updatedAt: string;
@@ -71,12 +71,12 @@ export interface Commitment {
 }
 
 export interface SaveReviewInput {
-  id?: string;
+  id?: string | undefined;
   weekStart: string;
   answers: Answers;
   freeWriting: string;
   followUps: FollowUp[];
-  previousAction?: PreviousActionCheck;
+  previousAction?: PreviousActionCheck | undefined;
 }
 
 export const emptyAnswers = (): Answers => ({
