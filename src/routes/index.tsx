@@ -18,17 +18,23 @@ export const Route = createFileRoute("/")({
     const w = weekStartOf();
     return Promise.all([
       queryClient.ensureQueryData(weekReviewQuery(w)),
-      queryClient.ensureQueryData(commitmentBeforeQuery(w)),
+      queryClient.ensureQueryData(commitmentBeforeQuery(nextWeek())),
       queryClient.ensureQueryData(reviewsQuery()),
     ]);
   },
   component: Home,
 });
 
+const nextWeek = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return weekStartOf(d);
+};
+
 function Home() {
   const w = weekStartOf();
   const { data: current } = useSuspenseQuery(weekReviewQuery(w));
-  const { data: commitment } = useSuspenseQuery(commitmentBeforeQuery(w));
+  const { data: commitment } = useSuspenseQuery(commitmentBeforeQuery(nextWeek()));
   const { data: reviews } = useSuspenseQuery(reviewsQuery());
   const past = reviews.filter((r) => r.weekStart !== w).slice(0, 4);
   const status = !current ? "Not started" : current.status === "draft" ? "In progress" : "Completed";
@@ -55,7 +61,7 @@ function Home() {
       </section>
 
       <section className="rounded-xl border bg-card p-6 shadow-soft">
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent">Your commitment this week</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent">{commitment?.weekStart === w ? "Your commitment for next week" : "Your commitment this week"}</p>
         {commitment ? (
           <>
             <p className="mt-3 font-serif text-2xl">{commitment.text}</p>
