@@ -80,6 +80,9 @@ def _database_config():
             raise ValueError("DATABASE_URL must use the postgres or postgresql scheme")
         options = {}
         sslmode = parse_qs(parsed.query).get("sslmode", [None])[-1]
+        if not sslmode and APP_ENV == "production":
+            # Render's internal Postgres URL omits sslmode, but supports TLS.
+            sslmode = "require"
         if sslmode:
             options["sslmode"] = sslmode
         config = {

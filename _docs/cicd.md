@@ -16,11 +16,13 @@ services use `autoDeployTrigger: checksPass`, so Render waits for repository
 checks before deploying a commit. Service configuration and free-tier database
 requirements are documented in [`render-deployment.md`](render-deployment.md).
 
-Render requires a connected GitHub repository and a `DATABASE_URL` secret for a
-PostgreSQL database. The Blueprint generates separate Django and bearer-token
-signing keys. The database connection must require TLS. No Render account,
-database, secrets, deployed services, or successful live journey are claimed by
-the checked-in configuration alone.
+The Blueprint provisions Render Postgres and connects it to the API through an
+internal `DATABASE_URL`. It generates separate Django and bearer-token signing
+keys. The database connection requires TLS. No Render account, database,
+secrets, deployed services, or successful live journey are claimed by the
+checked-in configuration alone. Render Free Postgres expires after 30 days;
+review the retention limits in [`render-deployment.md`](render-deployment.md)
+before storing personal data.
 
 ## Release verification
 

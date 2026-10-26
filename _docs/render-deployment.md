@@ -7,10 +7,10 @@ availability guarantee.
 
 ## Database and environment
 
-The API uses a PostgreSQL database outside Render. Set `DATABASE_URL` when
-Render prompts for the Blueprint's unsynchronized secret. Use the Neon free
-PostgreSQL connection string with TLS (`sslmode=require`). This project uses
-PostgreSQL transactions and row locking; do not substitute SQLite or D1.
+The Blueprint creates a Render PostgreSQL database in Singapore and supplies
+its internal connection string to the API as `DATABASE_URL`. Production Django
+configuration requires TLS for this connection. This project uses PostgreSQL
+transactions and row locking; do not substitute SQLite.
 
 The Blueprint generates separate `DJANGO_SECRET_KEY` and `TOKEN_SIGNING_KEY`
 values. Keep `AI_API_KEY` blank unless you deliberately enable the external AI
@@ -30,11 +30,10 @@ and sync it again. `VITE_API_BASE_URL` is compiled into the frontend image.
 
 1. Push the repository to GitHub and connect it to Render.
 2. In Render, create a Blueprint from the repository and select `render.yaml`.
-3. Supply the Neon `DATABASE_URL` when prompted. Do not paste it into the
-   repository or a build-time frontend variable.
-4. Create the API and frontend services. Render deploys both Docker images after
-   the configured GitHub checks pass.
-5. Wait for each service's first deploy and database migration to finish. Test
+3. Create the Blueprint resources. Render provisions the database and injects
+   its internal URL into the API service; no external database URL is needed.
+4. Wait for the API and frontend Docker services to deploy after the configured
+   GitHub checks pass, and for the API's startup migration to finish. Test
    `/api/health/`, then perform a synthetic account registration/login and a
    review save/read/delete journey before using personal data.
 
@@ -48,9 +47,11 @@ the journal flow works.
   sleeping service can take about a minute to wake.
 - Free service storage is ephemeral. Journal data belongs in PostgreSQL, never
   in the container filesystem.
-- Render Free Postgres expires 30 days after creation, so this Blueprint leaves
-  the database external. Neon Free currently provides 1 GB of storage and 100
-  compute hours per project monthly; its database can also sleep while idle.
+- Render Free Postgres provides 1 GB and expires 30 days after creation. After
+  expiration, the database is inaccessible; there is a 14-day upgrade grace
+  period before Render deletes it and its data. Upgrade before the deadline or
+  export and restore the data elsewhere. Free Postgres has no backups, so do not
+  treat it as durable storage for personal journal data.
 - Render may suspend a free service that initiates unusually high external
   traffic. Keep database and provider traffic modest and watch workspace usage.
 - Free plans are intended for hobby projects and previews, not a dependable
@@ -65,4 +66,4 @@ No live Render deployment is claimed until the steps above have been completed.
 
 References: [Render Blueprints](https://render.com/docs/blueprint-spec),
 [Render free services](https://render.com/docs/free), and
-[Neon free-plan limits](https://github.com/neondatabase/website/blob/main/content/faqs/free-plan-limits.md).
+[connecting to Render Postgres](https://render.com/docs/postgresql-creating-connecting).
