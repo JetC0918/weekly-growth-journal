@@ -74,13 +74,6 @@ Use the test database and factories or explicit fixtures. Never point tests at a
 
 The Django integration tag currently covers registration/login and bearer authentication; journal draft persistence and retrieval; per-user access isolation; report completion and evidence; insight correction; commitment lookup across weeks; and review/account-data deletion. Report and follow-up endpoint tests inject deterministic fakes or mock transport so the suite makes no live AI call. The tag is a focused API/database integration group, not a claim of automated OpenAPI conformance or browser testing.
 
-The optional `pytest` compatibility suite exercises only the transitional FastAPI prototype and its in-memory store. It is not the Django/PostgreSQL integration suite. Run it separately:
-
-```sh
-uv sync --extra test
-uv run pytest
-```
-
 ## Browser end-to-end tests
 
 Browser end-to-end tests exercise a small number of complete user journeys through the running application. They are distinct from the Django integration group.

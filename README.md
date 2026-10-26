@@ -24,7 +24,7 @@ The product aims to help users reflect consistently, find feedback useful, and f
 
 ## Current implementation
 
-The repository contains a TanStack Start frontend and a Django/DRF backend. The frontend's `GrowthService` calls the Django API. Django uses PostgreSQL for account and journal data, with optional OpenAI-compatible report and follow-up generation that stays inactive when `AI_API_KEY` is blank. The earlier FastAPI implementation under `backend/app/` is transitional and is not the backend launch path. See [`_docs/architecture.md`](_docs/architecture.md) for current component boundaries and planned deployment status.
+The repository contains a TanStack Start frontend and a Django/DRF backend. The frontend's `GrowthService` calls the Django API. Django uses PostgreSQL for account and journal data, with optional OpenAI-compatible report and follow-up generation that stays inactive when `AI_API_KEY` is blank. See [`_docs/architecture.md`](_docs/architecture.md) for current component boundaries and planned deployment status.
 
 The product direction and broader MVP scope are documented in [`_docs/specs.md`](_docs/specs.md). The private deployment preparation, production configuration checks, CORS allowlist requirements, and PostgreSQL backup/restore guidance are in [`_docs/private-deployment.md`](_docs/private-deployment.md). Production CORS requires explicit HTTPS frontend origins and is enforced by Django's CORS middleware. The Cloudflare deployment runbook includes a Python Worker/PostgreSQL compatibility gate in [`_docs/cloudflare-deployment.md`](_docs/cloudflare-deployment.md).
 
@@ -101,23 +101,14 @@ uv run python backend/manage.py test
 
 The integration group uses Django's isolated PostgreSQL test database and
 deterministic provider fakes. It covers authenticated endpoint flows, user
-isolation, draft/report/insight/commitment behavior, and data deletion. The
-separate compatibility suite checks only the transitional FastAPI prototype
-and in-memory store; it is not Django integration coverage. Run it from the
-repository root with:
+isolation, draft/report/insight/commitment behavior, and data deletion.
 
-```sh
-uv sync --extra test
-uv run pytest
-```
-
-See [`backend/README.md`](backend/README.md) for database configuration and the
-transition note.
+See [`backend/README.md`](backend/README.md) for database configuration.
 
 ## Project layout
 
 - `frontend/` — TanStack Start, React, and TypeScript app, including its mock service and frontend tests.
-- `backend/` — Django/DRF API, Docker image definition, and transitional FastAPI source under `backend/app/`.
+- `backend/` — Django/DRF API and Docker image definition.
 - `docker-compose.yml` — PostgreSQL, Django API, and production-built frontend for local full-stack use.
 - `observability/` — separate local OpenTelemetry Collector, Prometheus, Loki, Tempo, and Grafana stack.
 - `.github/workflows/ci.yml` — pull-request/main backend, frontend, container, dependency-audit, and tracked-content guardrail checks.
