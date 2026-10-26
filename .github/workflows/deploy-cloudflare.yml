@@ -146,30 +146,33 @@ jobs:
           PY
 
       - name: Deploy Django API Worker
+        working-directory: backend/cloudflare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: uv run --locked --project backend/cloudflare pywrangler deploy --config backend/cloudflare/wrangler.ci.toml
+        run: uv run --locked --project . pywrangler deploy --config wrangler.ci.toml
 
       - name: Set production Django signing secrets
+        working-directory: backend/cloudflare
         env:
           CF_DJANGO_SECRET_KEY: ${{ secrets.CF_DJANGO_SECRET_KEY }}
           CF_TOKEN_SIGNING_KEY: ${{ secrets.CF_TOKEN_SIGNING_KEY }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          printf '%s' "$CF_DJANGO_SECRET_KEY" | uv run --locked --project backend/cloudflare pywrangler secret put DJANGO_SECRET_KEY --config backend/cloudflare/wrangler.ci.toml
-          printf '%s' "$CF_TOKEN_SIGNING_KEY" | uv run --locked --project backend/cloudflare pywrangler secret put TOKEN_SIGNING_KEY --config backend/cloudflare/wrangler.ci.toml
+          printf '%s' "$CF_DJANGO_SECRET_KEY" | uv run --locked --project . pywrangler secret put DJANGO_SECRET_KEY --config wrangler.ci.toml
+          printf '%s' "$CF_TOKEN_SIGNING_KEY" | uv run --locked --project . pywrangler secret put TOKEN_SIGNING_KEY --config wrangler.ci.toml
 
       - name: Set API host and CORS allowlists
+        working-directory: backend/cloudflare
         env:
           CF_DJANGO_ALLOWED_HOSTS: ${{ secrets.CF_DJANGO_ALLOWED_HOSTS }}
           CF_CORS_ALLOWED_ORIGINS: ${{ secrets.CF_CORS_ALLOWED_ORIGINS }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          printf '%s' "$CF_DJANGO_ALLOWED_HOSTS" | uv run --locked --project backend/cloudflare pywrangler secret put DJANGO_ALLOWED_HOSTS --config backend/cloudflare/wrangler.ci.toml
-          printf '%s' "$CF_CORS_ALLOWED_ORIGINS" | uv run --locked --project backend/cloudflare pywrangler secret put CORS_ALLOWED_ORIGINS --config backend/cloudflare/wrangler.ci.toml
+          printf '%s' "$CF_DJANGO_ALLOWED_HOSTS" | uv run --locked --project . pywrangler secret put DJANGO_ALLOWED_HOSTS --config wrangler.ci.toml
+          printf '%s' "$CF_CORS_ALLOWED_ORIGINS" | uv run --locked --project . pywrangler secret put CORS_ALLOWED_ORIGINS --config wrangler.ci.toml
 
       - name: Deploy frontend Worker
         working-directory: frontend
