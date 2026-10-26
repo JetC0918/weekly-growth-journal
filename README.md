@@ -24,13 +24,38 @@ The product aims to help users reflect consistently, find feedback useful, and f
 
 ## Current implementation
 
-The repository contains an interactive frontend prototype and a Django/DRF backend. The frontend's `GrowthService` calls the Django API. Django uses PostgreSQL for account and journal data, with optional OpenAI-compatible report and follow-up generation that stays inactive when `AI_API_KEY` is blank. The earlier FastAPI implementation under `backend/app/` is transitional and is not the backend launch path.
+The repository contains a TanStack Start frontend and a Django/DRF backend. The frontend's `GrowthService` calls the Django API. Django uses PostgreSQL for account and journal data, with optional OpenAI-compatible report and follow-up generation that stays inactive when `AI_API_KEY` is blank. The earlier FastAPI implementation under `backend/app/` is transitional and is not the backend launch path. See [`_docs/architecture.md`](_docs/architecture.md) for current component boundaries and planned deployment status.
 
 The product direction and broader MVP scope are documented in [`_docs/specs.md`](_docs/specs.md). The private deployment preparation, production configuration checks, CORS allowlist requirements, and PostgreSQL backup/restore guidance are in [`_docs/private-deployment.md`](_docs/private-deployment.md). Production CORS requires explicit HTTPS frontend origins and is enforced by Django's CORS middleware.
 
 ## Run locally
 
-You need [Bun](https://bun.sh/) installed.
+### Run the full app with Docker
+
+You need Docker Desktop or Docker Engine with Compose. From the repository root:
+
+```sh
+docker compose up --build
+```
+
+Compose starts PostgreSQL, runs Django migrations and the API, then starts the
+production-built frontend. Open `http://localhost:3000`; the API health endpoint
+is `http://localhost:8000/api/health/`. Local defaults use deterministic fake
+feedback and do not call an AI provider. Set `AI_PROVIDER_MODE=openai` and
+`AI_API_KEY` in a local `.env` file to opt into a configured provider. PostgreSQL
+data persists in the `postgres_data` volume. Stop the services with
+`docker compose down`; add `-v` only when you intend to delete that database.
+
+Override the local ports with `FRONTEND_PORT`, `BACKEND_PORT`, and
+`POSTGRES_PORT` in `.env` if needed. If the frontend or backend port changes,
+also set `CORS_ALLOWED_ORIGINS` and `VITE_API_BASE_URL` to the matching browser
+origins, then rebuild the frontend image. `VITE_API_BASE_URL` is compiled into
+that image; its default is `http://localhost:8000/api`.
+
+### Run services directly
+
+For frontend-only development outside containers, you need [Bun](https://bun.sh/)
+installed.
 
 ```sh
 cd frontend
@@ -64,8 +89,9 @@ uv run python backend/manage.py check
 uv run python backend/manage.py test
 ```
 
-The compatibility test suite also checks the transitional FastAPI prototype and
-the Django health endpoint. Run it from the repository root with:
+The compatibility test suite checks the transitional FastAPI prototype.
+Django health coverage belongs to the Django suite above. Run the compatibility
+suite from the repository root with:
 
 ```sh
 uv sync --extra test
@@ -78,7 +104,8 @@ transition note.
 ## Project layout
 
 - `frontend/` — TanStack Start, React, and TypeScript app, including its mock service and frontend tests.
-- `backend/` — Django/DRF backend foundation and transitional FastAPI source under `backend/app/`.
+- `backend/` — Django/DRF API, Docker image definition, and transitional FastAPI source under `backend/app/`.
+- `docker-compose.yml` — PostgreSQL, Django API, and production-built frontend for local full-stack use.
 - `openapi.yaml` — API contract for the backend.
 - `_docs/specs.md` — product problem, MVP decisions, expected experience, scope, and success criteria.
 - `_docs/process.md` — project work process and role responsibilities.
@@ -86,4 +113,4 @@ transition note.
 
 ## Development workflow
 
-The project is developed with AI coding assistance using repository instructions and a documented PM/engineer/QA workflow. Changes should be reviewed against their acceptance criteria and verified with the relevant checks. See [`AGENTS.md`](AGENTS.md) and [`_docs/process.md`](_docs/process.md) for the current instructions.
+The project uses AI coding assistance with repository instructions and a documented PM/engineer/QA workflow. See [`_docs/ai-development-workflow.md`](_docs/ai-development-workflow.md) for the evidence record format and currently recorded evidence, and [`AGENTS.md`](AGENTS.md) and [`_docs/process.md`](_docs/process.md) for project instructions.

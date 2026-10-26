@@ -12,7 +12,16 @@ architecture.
 
 ## Local setup
 
-Run these commands from the repository root:
+For the complete local app, use Docker Compose from the repository root:
+
+```sh
+docker compose up --build
+```
+
+This starts PostgreSQL, runs migrations before the API starts, and starts the
+production-built frontend. The browser app is at `http://localhost:3000`; the
+API health endpoint is `http://localhost:8000/api/health/`. To run only the
+database in Docker while developing the API directly, use these commands:
 
 ```sh
 uv sync

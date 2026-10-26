@@ -1,200 +1,66 @@
-# System Architecture
+# System architecture
 
-**Status:** Proposed target architecture for the MVP  
-**Current implementation:** Frontend prototype with browser-local mock storage  
-**Contract:** [`../openapi.yaml`](../openapi.yaml)  
-**Product requirements:** [`specs.md`](specs.md)
+**Status:** Current repository architecture, with planned deployment work labeled separately.
 
-This document makes the stack and service boundaries concrete. It describes the target system; it does not claim that the backend, database, deployment, or AI integration already exist.
+This describes source inspected on 2026-10-26: baseline revision `c5e25e5` plus the current working-tree Compose/Dockerfile additions, not a fresh runtime verification. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service and an earlier FastAPI prototype. Cloudflare deployment remains planned; the frontend's existing build wrapper has a Cloudflare target hint, but no Worker deployment configuration or deployed-environment evidence is checked in.
 
-## 1. Architecture decisions
+## Implemented components
 
-| Concern | Decision |
-| --- | --- |
-| Web application | Keep the existing React, TypeScript, TanStack Start frontend under `frontend/`, managed with Bun. Deploy it as a Cloudflare Worker using Cloudflare's Vite plugin and Wrangler. |
-| Backend | Django with Django REST Framework, deployed as a Cloudflare Python Worker through its WSGI adapter. The backend owns authentication, validation, business rules, AI orchestration, and persistence. |
-| API | JSON REST API under `/api`; `openapi.yaml` is the source of truth for paths, payloads, and responses. |
-| Authentication | Username and password registration/login; return a signed bearer access token. Enforce ownership for every journal-data request. Production API CORS allows only explicitly configured HTTPS frontend origins through `django-cors-headers`, with credentials disabled. |
-| Database | PostgreSQL in local Compose and a managed PostgreSQL provider in deployment. Connect the API Worker through Cloudflare Hyperdrive; use Django migrations for schema changes. |
-| AI | A backend-only provider adapter. Ask for structured report output, validate it, and keep provider-specific calls out of views and frontend code. Use a deterministic fake provider in tests. |
-| Local services | Docker Compose runs PostgreSQL and Django. Vite serves the frontend and proxies `/api` to Django during development. |
-| Deployment | Publish separate frontend and API Workers. Deploy a tested commit to a development environment, smoke-test it, then promote the same revision to production. Use the free `workers.dev` hostnames initially. |
-
-The bearer-token and endpoint choices follow the current OpenAPI contract. Cloudflare documents TanStack Start deployment on Workers and Django support through Python Workers. The Python package ecosystem is limited to compatible pure-Python, PyEmscripten, or Pyodide packages, so verify every backend dependency in a deployment proof of concept. Before implementation, resolve the specific token library and production AI provider; adding dependencies must follow the approval rule in the repository `AGENTS.md`.
-
-References: [TanStack Start on Workers](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/), [Django on Python Workers](https://developers.cloudflare.com/workers/languages/python/packages/django/), [Python package support](https://developers.cloudflare.com/workers/languages/python/packages/), and [Hyperdrive with Python Workers](https://developers.cloudflare.com/hyperdrive/examples/python-workers/).
-
-## 2. Runtime architecture
-
-```mermaid
-flowchart LR
-    Browser[User browser]
-    Web[Cloudflare Worker\nTanStack Start / React]
-    API[Cloudflare Python Worker\nDjango REST API]
-    AI[AI provider adapter]
-    LLM[Configured LLM API]
-    HD[Cloudflare Hyperdrive]
-    DB[(Managed PostgreSQL)]
-
-    Browser -->|HTTPS / frontend workers.dev| Web
-    Browser -->|HTTPS / API workers.dev\nJSON + bearer token| API
-    API -->|Hyperdrive binding| HD
-    HD --> DB
-    API --> AI
-    AI -->|Structured request| LLM
-```
-
-In development, Vite serves the frontend and Django serves `/api`; configure the Vite development proxy to forward `/api` to Django, so no CORS allowlist is needed locally. In the initial Cloudflare deployment, the frontend and API have separate `workers.dev` origins; set the exact HTTPS frontend origin in `CORS_ALLOWED_ORIGINS` and verify the preflight flow before release. CORS allows only the required API methods and `Authorization` / `Content-Type` headers, with cookie credentials disabled. The browser sends the bearer token required by `openapi.yaml`.
-
-If a custom domain is added later, route both Workers under one site (`app.example.com` and `api.example.com`) or put a same-origin API proxy in front. Do not expose the PostgreSQL URL, Hyperdrive connection details, Django signing key, token signing key, or AI credentials in frontend variables.
-
-The frontend currently disables SSR on data routes because its mock reads browser storage. After switching to the HTTP service, keep authenticated journal data client-side unless server rendering is deliberately redesigned to pass request-scoped credentials safely.
-
-## 3. Component responsibilities
-
-### Frontend (`frontend/`)
-
-- Render the home, weekly reflection, feedback report, and history screens.
-- Keep all backend operations behind the existing `GrowthService` interface in `src/services/api.ts`.
-- Replace the current mock service with an HTTP implementation without making route components call `fetch` directly.
-- Attach the bearer token to protected requests and handle expired/invalid sessions by returning the user to sign-in.
-- Validate user input for usability; treat backend validation as authoritative.
-- Never call the AI provider directly or store its secret in browser code.
-
-The current mock service is a development prototype: it stores data in browser `localStorage`, and its report/question generation is heuristic code, not an LLM integration.
-
-### Backend (`backend/`)
-
-Organize Django code by domain, with a small number of apps:
-
-- `accounts`: registration, login, token issuance, and current-user identity.
-- `journal`: reviews, reports, commitments, data deletion, and API serializers/views.
-- `feedback`: report-generation interface and provider adapter, called by the journal completion use case.
-
-Keep HTTP views thin. A request should pass through authentication and serializer validation, call a domain service/use case, then serialize the result. Put transaction boundaries around completing a review and saving its report so a failed generation does not leave a completed review without the matching report.
-
-For Cloudflare, expose the Django WSGI application through the `workers.wsgi` adapter and initialize/deploy it with `pywrangler`. Use a Hyperdrive binding to connect to managed PostgreSQL. The Python Worker compatibility date must meet Cloudflare's minimum for Hyperdrive; check the current Cloudflare guide when configuring it. Do not rely on local files for persistence: Python Worker files are ephemeral between isolates.
-
-### AI provider adapter
-
-Expose a small backend interface, for example `suggest_follow_ups(review, history)` and `generate_report(review, history)`. The production implementation calls the configured provider using server-side credentials. The test implementation returns deterministic structured data.
-
-Validate the model response against the report schema before saving it. Each observation or hypothesis must include supporting text from the user's entries or relevant earlier reviews. Label interpretations as hypotheses, use cautious language, and allow the user to accept, reject, or correct them. Do not present psychological diagnoses or claims that are not supported by the supplied reflections. If generation or validation fails, return an actionable API error and leave the review editable.
-
-## 4. Data model
-
-All journal records belong to an authenticated user. Database foreign keys enforce ownership and cascading deletion. Use UUID primary keys for public resource identifiers and UTC timestamps for audit fields.
-
-| Entity | Important fields and constraints |
-| --- | --- |
-| `User` | Django user identity; unique username; password stored using Django's password hashers. |
-| `Review` | `user`, `week_start` (Monday date), five prompt answers, free writing, follow-ups, previous-action check, `status` (`draft` or `completed`), `created_at`, `updated_at`; unique constraint on (`user`, `week_start`). |
-| `FeedbackReport` | One-to-one `review`, takeaways, strengths, challenges, patterns, proposed action, `generated_at`; store each insight's text, kind, evidence, status, and optional correction as structured JSON. |
-| `Commitment` | One-to-one `review`, text, optional measure, `created_at`; the review's week identifies when the commitment was made and it applies to the following week. |
-
-Store answers and report sections as JSON fields where the shape is already defined by the API contract. Keep user, review, report, and commitment relations explicit so ownership checks, uniqueness, and delete behavior are enforced by the database. Add indexes for a user's reviews ordered by `week_start` and for commitment lookup before a given week.
-
-Deleting one review also deletes its report and commitment. Deleting all journal data removes all reviews, reports, and commitments for the authenticated user but preserves the account unless the user separately deletes it. Deleting an account cascades to all of that user's journal data.
-
-## 5. API boundary
-
-`openapi.yaml` defines the initial contract. Protected operations require `Authorization: Bearer <access-token>`. Registration and login are public. All reads, updates, and deletes are scoped to the authenticated user; an identifier belonging to another user must never expose or mutate that record.
-
-The main resource operations are:
-
-- `POST /api/auth/register` and `POST /api/auth/login`
-- `GET /api/reviews`, `POST /api/reviews`, and `GET /api/reviews/by-week/{weekStart}`
-- `GET`, `DELETE`, and completion/report operations under `/api/reviews/{reviewId}`
-- Follow-up suggestions, insight updates, and commitment operations under the paths defined in `openapi.yaml`
-- `GET /api/commitments/before?weekStart=...` for the prior action check-in
-- `DELETE /api/data` to erase journal data for the authenticated user
-
-Use the exact request and response schemas in the OpenAPI document. In particular, saving a review is an upsert by supplied review ID or by the unique user/week pair; completing a review generates or regenerates its report; and a commitment can be created or replaced for that review. Return consistent JSON errors with a `detail` field and appropriate `400`, `401`, `404`, and `409` statuses.
-
-The OpenAPI contract currently returns `null` in a `200` response for absent single resources. Keep that behavior in the implementation or revise the contract and frontend together before changing it.
-
-## 6. Request and data flow
-
-1. The user saves a draft from the reflection screen. The frontend's HTTP `GrowthService` sends the review data to `POST /api/reviews`.
-2. Django authenticates the user, validates the five answer fields and week date, and creates or updates that user's draft.
-3. When the user completes the review, the frontend calls `POST /api/reviews/{reviewId}/complete`.
-4. The backend loads the current review and relevant earlier completed reviews, calls the feedback service, validates the structured result, and saves the completed review and report in a transaction.
-5. The user edits, accepts, or rejects an insight. The frontend sends only the changed status or correction to the insight `PATCH` endpoint; the backend verifies that the insight belongs to the user's report.
-6. The user saves one commitment. The backend creates or updates the commitment for that review.
-7. At the next review, the frontend requests the latest commitment whose `week_start` is earlier than the new review's week and asks the user what happened.
-
-## 7. Configuration and environments
-
-Keep secrets out of source control. Configure services through environment variables and provide a checked-in `.env.example` containing names and safe local defaults only.
-
-| Variable | Used by | Purpose |
+| Area | Current implementation | Evidence |
 | --- | --- | --- |
-| `DATABASE_URL` | Local backend | PostgreSQL connection string for Docker Compose development and tests. In Cloudflare, read the connection string from the Hyperdrive binding instead. |
-| `APP_ENV` | Backend | Explicit environment mode: `development` locally and `production` for deployment checks. |
-| `DJANGO_SECRET_KEY` | Backend | Django signing and cryptographic operations; unique per environment. |
-| `DJANGO_DEBUG` | Backend | Enable debug behavior only in local development. |
-| `DJANGO_ALLOWED_HOSTS` | Backend | Explicit host allowlist. |
-| `CORS_ALLOWED_ORIGINS` | Backend | Comma-separated exact HTTPS frontend origins; required in production and blank for the local Vite proxy. |
-| `TOKEN_SIGNING_KEY` | Backend | Signing key for access tokens; distinct by environment. |
-| `AI_BASE_URL` | Backend | OpenAI-compatible API base URL for optional follow-up suggestions. |
-| `AI_API_KEY` | Backend | Provider bearer credential; blank until configured and never exposed to the browser. |
-| `AI_MODEL` | Backend | Model identifier accepted by the configured provider. |
-| `AI_PROVIDER_MODE` | Backend | `fake` for deterministic local walkthroughs when `DJANGO_DEBUG=true`; `openai` for the optional configured provider. Fake mode is rejected when debug is false. |
-| `VITE_API_BASE_URL` | Frontend | Local value is `http://localhost:8000/api`; production value is the API Worker origin plus `/api`, for example `https://weekly-growth-api.<account>.workers.dev/api`. This is public routing information, not a secret. |
+| Frontend | TanStack Start, React 19, and TypeScript app, managed with Bun. Vite serves local development; TanStack Query caches service results. Journal routes disable SSR and require a session. | [`frontend/package.json`](../frontend/package.json), [`frontend/vite.config.ts`](../frontend/vite.config.ts), [`frontend/src/services/index.ts`](../frontend/src/services/index.ts), [`frontend/src/services/queries.ts`](../frontend/src/services/queries.ts), [`frontend/src/routes/review.tsx`](../frontend/src/routes/review.tsx) |
+| HTTP boundary | The app wires `createHttpService` as its active `GrowthService`. It sends JSON to `VITE_API_BASE_URL` (default `/api`), attaches a bearer token, and translates failed requests to `ApiError`. | [`frontend/src/services/api.ts`](../frontend/src/services/api.ts), [`frontend/src/services/httpService.ts`](../frontend/src/services/httpService.ts) |
+| Browser session | Registration/login keep the access token in module memory for up to 24 hours; reloading starts signed out. Expiry or an API 401 clears the session. Identity/session changes clear the query cache; sign-out redirects to the account screen. | [`frontend/src/services/auth.ts`](../frontend/src/services/auth.ts), [`frontend/src/lib/session-cache.ts`](../frontend/src/lib/session-cache.ts), [`frontend/src/routes/__root.tsx`](../frontend/src/routes/__root.tsx) |
+| API | Django 5 and Django REST Framework provide account registration/login, health, journal, report, commitment, and data-deletion endpoints. Protected endpoints use signed bearer authentication and default to authenticated access. | [`backend/config/urls.py`](../backend/config/urls.py), [`backend/journal/urls.py`](../backend/journal/urls.py), [`backend/accounts/authentication.py`](../backend/accounts/authentication.py), [`backend/config/settings.py`](../backend/config/settings.py) |
+| Persistence | PostgreSQL stores Django accounts and journal records. Reviews have a unique user/week constraint; deleting a review cascades to its report and commitment. Compose gives PostgreSQL a persistent volume and health check. | [`backend/journal/models.py`](../backend/journal/models.py), [`backend/journal/migrations/0001_initial.py`](../backend/journal/migrations/0001_initial.py), [`docker-compose.yml`](../docker-compose.yml) |
+| Feedback generation | A backend provider interface supports deterministic fake output and an optional OpenAI-compatible provider. It is used for follow-up questions and reports. Reports are shape-checked, evidence must occur in supplied reflection text, and report persistence plus review completion use a database transaction. | [`backend/feedback/follow_ups.py`](../backend/feedback/follow_ups.py), [`backend/feedback/reports.py`](../backend/feedback/reports.py), [`backend/journal/views.py`](../backend/journal/views.py) |
 
-Local Compose should start PostgreSQL with a health check, wait for it before starting Django, apply migrations, and expose the frontend and API on documented local ports. In Cloudflare, configure Hyperdrive separately for development and production and store application secrets using Worker secrets, not checked-in Wrangler variables. Production must use managed PostgreSQL backups. Debug mode, development credentials, and permissive CORS must not be enabled in production.
+The checked-in [`openapi.yaml`](../openapi.yaml) describes the intended HTTP contract. The frontend service and Django URL/view/serializer code are the implementation; the contract alone does not establish that every documented behavior is implemented or deployed. For example, absent individual resources are returned as JSON `null` in several Django views, while deletes return `204`.
 
-### Free-plan constraints
+The contract's introductory claim that the frontend uses a local mock and its FastAPI validation wording are legacy prose. Django deliberately retains the documented `422` validation-detail array for account requests through [`accounts/exceptions.py`](../backend/accounts/exceptions.py); journal validation returns `400` with a detail string. The HTTP client tests use explicit request expectations and mocked responses, not an automatic OpenAPI conformance validator.
 
-The initial deployment target is the Cloudflare Free plan and `workers.dev` URLs. Current published limits include 100,000 Worker requests per day and 10 ms of CPU time per invocation. Hyperdrive's Free plan includes 100,000 database queries per day. These limits can change; check them before deployment and monitor actual use. Django running through Pyodide may approach the CPU limit, so benchmark real API requests before relying on the free tier. The PostgreSQL provider is separate from Hyperdrive and may charge for database use, storage, or backups. The hosted AI provider may also charge per request. Cloudflare's [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) and [Hyperdrive pricing](https://developers.cloudflare.com/hyperdrive/platform/pricing/) are the references for current quotas.
+## Request and data flow
 
-Cloudflare D1 is not the selected database for this design. The Django D1 backend documented by Cloudflare does not support transactions, while review completion and report persistence require an atomic operation. Hyperdrive preserves the PostgreSQL design and allows those transactions to remain in PostgreSQL.
+1. The browser calls the shared `GrowthService`; route components do not own API transport.
+2. The HTTP service sends the request to Django and adds `Authorization: Bearer …` when a session token is in memory.
+3. Django authenticates the token, validates request data, and scopes journal queries to the current user.
+4. Django reads and writes PostgreSQL models. Review completion obtains up to five earlier completed reviews from that user and calls the provider before opening the write transaction. After validating the result, it locks the review, preserves user-edited insights, and saves the report and completed state atomically. Provider/validation failures leave the prior state unchanged; database failures roll back persistence.
+5. The frontend renders reports and sends insight edits or commitment updates through the same HTTP boundary.
 
-## 8. Testing and delivery boundaries
+Local setup and commands are in [`README.md`](../README.md) and [`backend/README.md`](../backend/README.md). The current working-tree [`docker-compose.yml`](../docker-compose.yml) defines a full local stack, started with `docker compose up --build`:
 
-- **Frontend unit tests:** exercise service behavior, date/week rules, report rendering, and form flows with an in-memory fake.
-- **Backend unit tests:** cover validation, ownership rules, report orchestration, and commitment lookup using Django's test database and a fake AI provider.
-- **API integration tests:** run against PostgreSQL and verify OpenAPI request/response behavior, authentication, per-user isolation, review completion, and deletion.
-- **End-to-end tests:** run the app through Compose and cover registration/login, a weekly review, generated report, commitment, next-week follow-up, and data deletion.
-- **CI:** lint and run frontend/backend unit tests, API integration tests, and build checks on each pull request. Validate both Worker builds before deployment.
-- **Release:** deploy the frontend and API Workers to development, run health checks and a smoke test against the deployed PostgreSQL connection, then require deliberate promotion of the same commit to production.
+- PostgreSQL 16 exposes host port 5433 and retains data in a named volume.
+- The [`backend/Dockerfile`](../backend/Dockerfile) installs locked Python dependencies, runs migrations, then serves Django's ASGI application with Uvicorn on port 8000. It waits for the database health check.
+- The [`frontend/Dockerfile`](../frontend/Dockerfile) builds with Bun and `NITRO_PRESET=node-server`, then serves the generated output with Node on port 3000. Its public `VITE_API_BASE_URL` is compiled at build time, defaulting to `http://localhost:8000/api` for the browser. Compose waits for backend health before starting it and configures local CORS for `http://localhost:3000`.
 
-The current repository has frontend tests only. These backend, integration, end-to-end, CI, and release steps are target work, not existing capabilities.
+These are local container definitions, not evidence of a successful image build, running stack, or Cloudflare deployment. For direct development, start only `db` with Compose, run Django with root [`manage.py`](../manage.py) (a shim) or [`backend/manage.py`](../backend/manage.py), and run Vite separately. Vite's `/api` development proxy forwards to Django on port 8000. The unauthenticated [`/api/health/` view](../backend/config/views.py) returns a static status; it is not a database readiness check.
 
-## 9. Privacy and operational safeguards
+## Data and security boundaries
 
-- Enforce authenticated ownership checks in the backend for every journal resource.
-- Use HTTPS in deployment, password hashing, short-lived signed access tokens, and secret rotation. Avoid putting access tokens in local storage; prefer an HTTP-only, Secure, SameSite cookie if the selected auth design and OpenAPI contract are updated to support it. Otherwise, document and mitigate the token-storage risk before release.
-- Do not log reflection bodies, AI prompts, provider responses, passwords, tokens, or API keys. Log request IDs, endpoint, status, duration, and safe error categories.
-- Make data deletion cascade and test it. Backups must have a documented retention and deletion policy appropriate for personal reflections.
-- Add health/readiness endpoints and monitor request failures, latency, database availability, and AI-provider errors. Alert on sustained failures and provide a runbook before production use.
-- Treat AI output as untrusted input: validate its shape, render it as text, retain evidence, and allow the user to correct or reject interpretations.
+`Review`, `FeedbackReport`, and `Commitment` are Django models in [`backend/journal/models.py`](../backend/journal/models.py). A review belongs to an account and has JSON answers/follow-ups/previous-action data, free writing, a week date, and draft/completed status. The frontend chooses Mondays; the current backend serializer validates a date without enforcing Monday. A report and commitment are each one-to-one with a review. Journal records use UUID database keys exposed with `rev_`, `rep_`, and `com_` prefixes, and timestamps use Django's UTC configuration. The unique user/week constraint and descending user/week index support lookup and history.
 
-## 10. Target repository layout
+The journal views scope access to the authenticated account. Deleting a review cascades to its report and commitment; `DELETE /api/data` deletes only that user's journal data and preserves the account. The prior-commitment lookup chooses the most recent week strictly before the requested date. Django accounts use password hashing, while [`accounts/tokens.py`](../backend/accounts/tokens.py) implements custom HMAC-SHA256 signed bearer tokens with a 24-hour expiry. There is no refresh-token endpoint; browser sign-out discards its token.
 
-```text
-README.md
-AGENTS.md
-openapi.yaml
-docker-compose.yml
-frontend/
-  wrangler.jsonc
-  vite.config.ts                 # Cloudflare Vite plugin for deployment
-  src/services/api.ts          # frontend contract
-  src/services/http/            # HTTP GrowthService implementation
-  src/services/mock/            # local/test implementation until backend is connected
-backend/
-  manage.py
-  pyproject.toml                # pywrangler / Workers-compatible package set
-  wrangler.jsonc
-  config/                       # settings, URLs, ASGI/WSGI
-  accounts/
-  journal/
-  feedback/
-  tests/
-_docs/
-  architecture.md
-.github/workflows/
-```
+`DATABASE_URL` or `POSTGRES_*` settings configure PostgreSQL. Django's bearer-token signing, CORS, allowed-host, debug, and provider settings are read from environment variables; safe local defaults are documented in [`.env.example`](../.env.example). Production CORS requires exact configured HTTPS origins and disables cookie credentials. These settings and deployment checks prepare the application for deployment; they do not provision hosting or secure a deployed instance.
 
-The first integration milestone is a deployment proof of concept: build the existing TanStack Start app with Cloudflare's supported Vite adapter, deploy a minimal Django endpoint as a Python Worker, and verify the chosen PostgreSQL driver through Hyperdrive. Measure Worker CPU time and confirm every dependency is compatible before moving the journal API. Then implement authentication and review CRUD, connect the frontend's HTTP `GrowthService`, and persist reviews in PostgreSQL. Add report generation and commitments after that boundary works end to end.
+AI provider behavior depends on configuration. The repository example and local Compose defaults select `AI_PROVIDER_MODE=fake`, `DJANGO_DEBUG=true`, and a blank `AI_API_KEY` for deterministic behavior. The Django settings themselves default provider mode to `openai`, but the provider makes no external request until its URL, model, and API key are configured. Fake mode is restricted to debug use. See [`backend/README.md`](../backend/README.md) and [`backend/config/checks.py`](../backend/config/checks.py). No provider call or external AI service is implied by the presence of the adapter.
+
+## Tests and contracts
+
+Test files are present; their presence does not show that they were run or passed. The repository includes:
+
+- Frontend Vitest/jsdom tests cover [HTTP request mapping and errors](../frontend/src/services/httpService.test.ts), [active HTTP wiring](../frontend/src/test/service-wiring.test.ts), mock service behavior, week/date rules, account flows, routing, session cache, and journal edit/delete flows. They use mocks rather than a live browser-to-Django stack.
+- Django tests cover [accounts and health](../backend/accounts/tests.py), [configuration/CORS](../backend/config/tests.py), [journal persistence, isolation, deletion, and a deterministic two-week journey](../backend/journal/tests.py), and [provider validation/failure/rollback behavior](../backend/feedback/tests.py). Database tests use Django's PostgreSQL test database; provider tests inject fakes or mock transport. The two-week journey uses an API client, not a browser.
+- Pytest [API compatibility](../backend/tests/test_api.py) and [OpenAPI smoke](../backend/tests/test_smoke.py) tests exercise only the transitional FastAPI app with its process-local store. Django health coverage belongs to the Django suite.
+
+Commands and database prerequisites are listed in [`AGENTS.md`](../AGENTS.md) and [`README.md`](../README.md). No test result is claimed here; check the task's workflow record for verification performed on a particular change.
+
+There is no tracked CI workflow or deployed end-to-end test configuration. Existing tests should not be described as a verified release pipeline.
+
+## Transitional code and planned deployment
+
+The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. The earlier FastAPI app under [`backend/app/`](../backend/app/) uses a seeded process-local store. It is transitional, and FastAPI/Uvicorn dependencies remain in [`pyproject.toml`](../pyproject.toml). Django under `backend/config/` is the documented API launch path and uses PostgreSQL; the legacy store is not its persistence layer.
+
+Cloudflare Workers for the frontend/API and a managed PostgreSQL connection through Hyperdrive remain a **planned deployment direction, not a verified deployment**. The existing Vite config uses `@lovable.dev/vite-tanstack-config` and documents Nitro's default Cloudflare build target. That is the current frontend build integration, not proof of publication. There are no tracked Wrangler files, API Worker adapter, Hyperdrive binding, or CI deployment workflow. Django currently exposes ordinary WSGI/ASGI entry points and reads PostgreSQL configuration directly from environment variables.
+
+The deployment notes in [`private-deployment.md`](private-deployment.md) describe private access, production configuration, and backup/restore preparation. Remaining work includes verifying Python Worker/package and PostgreSQL driver compatibility, configuring the deployment and Hyperdrive binding, validating current platform limits, provisioning access/secrets/backups, and recording staged smoke and restore checks. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No quota estimate, successful release, managed database, or deployed environment is asserted here.
