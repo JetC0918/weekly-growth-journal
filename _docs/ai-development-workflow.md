@@ -230,3 +230,49 @@ deployed and checked.
 - **Automation:** None ran. No hooks, CI, permissions configuration, or MCP
   configuration was added by this change.
 - **Outcome:** Documentation review complete; no commit or deployment performed.
+
+### 2026-10-26 — Record latest QA and Cloudflare proof-of-concept status
+
+- **Task/prompt (summary):** Incorporate the supplied newer QA results into the
+  architecture and workflow evidence. Reflect the current Cloudflare Worker
+  configs and gated deployment workflow without claiming a live deployment.
+  Do not run more tests unless requested.
+- **Baseline/scope:** Revision `b02cbe7`; the working tree already contained
+  concurrent application, test, observability, and Cloudflare changes. Limit
+  this task to `_docs/architecture.md` and this evidence file.
+- **Context:** Inspected the current architecture, Cloudflare runbook, CI and
+  deployment workflow definitions, frontend Wrangler config, isolated Django
+  Worker adapter, and Hyperdrive config. Some new deployment files were
+  untracked in the working tree. No Cloudflare account credentials were
+  supplied or used.
+- **QA evidence supplied:** On 2026-10-26, the shared QA update reports
+  `uv run python backend/manage.py test backend.config` passed 20 tests,
+  including PostgreSQL SSL mode behavior. It reports frontend lint with 0
+  errors and 7 existing `react-refresh` warnings. Earlier shared QA notes also
+  report a passing full-app Compose run and Django unit/integration/frontend
+  tests; those notes supplied no run IDs, revisions, exact commands, or result
+  counts. For the newer results, no run URL/ID, exact revision, or test
+  environment was supplied; the lint command was also not named. These are
+  attributed reports, not commands run in this task.
+- **Configuration evidence:** The current working tree's deployment workflow
+  waits for successful CI on `main`, requires `CLOUDFLARE_DEPLOY_ENABLED=true`
+  plus account-specific secrets/variables, deploys API and frontend Workers,
+  and configures HTTP health/root smoke checks. The workflow has not run. There
+  is no evidence of a live Worker, managed database, deployed smoke test, or
+  Cloudflare runtime compatibility.
+- **Plan/handoffs:** PM grooming was supplied in this task conversation. The
+  engineer inspected the current deployment artifacts but hit an agent usage
+  limit before editing; the orchestrator updated the two scoped documents.
+  Independent documentation QA returned PASS. Human review is not recorded.
+- **Tools/access:** Used FastCtx MCP to inspect files and FastCtx `run` to read
+  Git status/history. No Cloudflare credentials were accessed; no deployment,
+  test, build, or external write was performed.
+- **AI work:** Updated this architecture's CI/deployment and test-evidence
+  sections and added this source-attributed task record. No application or
+  configuration files were changed.
+- **Verification:** Independent documentation QA returned PASS. `git diff --check`
+  passed for both scoped docs; 68 local Markdown targets resolved. Tests and
+  builds were not run, following the instruction in the supplied QA update.
+- **Automation:** No CI or deployment workflow was triggered by this task.
+- **Outcome:** Documentation update complete; live deployment remains
+  unverified.
