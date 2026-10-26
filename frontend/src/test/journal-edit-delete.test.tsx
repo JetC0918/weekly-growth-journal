@@ -7,12 +7,7 @@ import { DraftDeleteButton } from "@/routes/history";
 import { ReviewEditor } from "@/routes/review";
 import { Toaster } from "@/components/ui/sonner";
 import { qk } from "@/services/queries";
-import {
-  services,
-  type Commitment,
-  type Review,
-  type SaveReviewInput,
-} from "@/services";
+import { services, type Commitment, type Review, type SaveReviewInput } from "@/services";
 
 const WEEK = "2025-01-06";
 
@@ -186,18 +181,12 @@ describe("journal edit and deletion flows", () => {
     );
 
     expect(screen.getByRole("button", { name: "Complete review" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Save changes" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("4. What did I learn about myself?"), {
       target: { value: "Save without refreshing" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Save changes" }),
-    );
-    expect(
-      await screen.findByText("Changes saved"),
-    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("Changes saved")).toBeInTheDocument();
     expect(services.completeReviewWithoutFeedback).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("4. What did I learn about myself?"), {
