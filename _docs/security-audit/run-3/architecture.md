@@ -25,7 +25,7 @@ Active API: Django 5.2/DRF/PostgreSQL (`backend/config/settings.py`, `urls.py`, 
 
 Docker backend (`backend/Dockerfile`) migrates then launches Django ASGI via Uvicorn. Frontend Docker starts generated Nitro Node server. `docker-compose.yml` is development-oriented. Local-only OTLP/Grafana/Loki/Tempo/Prometheus configuration is under `observability/`; application instrumentation in `backend/config/telemetry.py`.
 
-Cloudflare is a gated, unverified proof of concept: Python Worker `backend/cloudflare/src/worker.py` adapts Django WSGI and Hyperdrive; bundle script copies only accounts/config/feedback/journal. Separate Python manifest/lock must also be reviewed. Frontend Worker uses `frontend/wrangler.jsonc`. Compatibility, migrations, transaction/locking behavior, DB TLS, edge access and telemetry need deployment evidence. Deployment workflow is disabled by repository variable until gates are satisfied.
+Deployment configuration was not verified in this audit. Compatibility, migrations, transaction/locking behavior, database TLS, access controls and telemetry require deployment evidence.
 
 Legacy FastAPI prototype (`backend/app/`, `backend/tests/`) has in-memory seeded accounts and a fixed development key; not reached by supported Django/Docker/Worker entry points. Review as retained source and assess coordinated retirement, not as a live auth bypass.
 

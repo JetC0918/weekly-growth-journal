@@ -23,7 +23,7 @@ node node_modules/eslint/bin/eslint.js .
 node node_modules/vite/bin/vite.js build
 ```
 
-Passed: 8 files / 32 frontend tests; lint 0 errors and 2 existing Fast Refresh warnings; client/SSR/Cloudflare production build. Independent TypeScript AST analysis verified all remaining local imports resolve and exactly six used shared controls remain. No product UI behavior change or screenshot-based UI acceptance is claimed.
+Passed: 8 files / 32 frontend tests; lint 0 errors and 2 existing Fast Refresh warnings; client/SSR production build. Independent TypeScript AST analysis verified all remaining local imports resolve and exactly six used shared controls remain. No product UI behavior change or screenshot-based UI acceptance is claimed.
 
 ## Independent Django QA
 
@@ -43,17 +43,16 @@ Additional hunter runtime observations: twelve cross-user requests denied; malfo
 - `python _docs/security-audit/run-3/evidence/scan_history.py`: 21 reachable commits, 273 unique blobs, one binary skipped, no high-confidence pattern matches. Raw `history-scan.json` retained; no secret values printed.
 - Downloaded hosted dependency ZIP; SHA-256 matched recorded artifact digest. Retained raw hosted JSON and ZIP.
 - `uv export --frozen --no-hashes --no-emit-project --format requirements-txt --output-file _docs/security-audit/run-3/evidence/root-requirements.txt --cache-dir .audit-uv-cache`.
-- `uv export --frozen --project backend/cloudflare --all-groups --no-hashes --no-emit-project --format requirements-txt --output-file _docs/security-audit/run-3/evidence/cloudflare-requirements.txt --cache-dir .audit-uv-cache`.
-- Temporary scanner command, with `UV_TOOL_DIR` set inside `.audit-uv-cache/tools`: `uv tool run --cache-dir .audit-uv-cache --from pip-audit pip-audit --no-deps --disable-pip -r <exported-requirements> --format json --output <saved-audit-json>`. Both passed, no known vulnerabilities. Root output has 42 package records; Cloudflare 17; inactive platform/interpreter markers are excluded. Scanner warned that fully hashed pinned exports are preferable; lock export supplies exact versions but this advisory-only scan did not install or attest package hashes. Project dependencies were not changed by the scanner.
+- Temporary scanner command, with `UV_TOOL_DIR` set inside `.audit-uv-cache/tools`: `uv tool run --cache-dir .audit-uv-cache --from pip-audit pip-audit --no-deps --disable-pip -r <exported-requirements> --format json --output <saved-audit-json>`. The root lock scan passed with no known vulnerabilities and 42 package records. Scanner warned that fully hashed pinned exports are preferable; lock export supplies exact versions but this advisory-only scan did not install or attest package hashes. Project dependencies were not changed by the scanner.
 - `node C:/Users/crab/.codex/skills/security-audit/validate-findings.cjs _docs/security-audit/run-3/findings.json`: PASS, two rejected entries, zero confirmed findings. Independent reviewer verified reasons, prose, citations and package/advisory counts.
 
 ## GitHub and access
 
-Connector reads: repository metadata, branches, main revision, rulesets, open PRs, releases, Actions runs/jobs/logs/artifact. Administrative/security endpoints unsupported by the connector were read through authenticated `gh api`; only status/configuration summaries were requested, never secret contents. Explicit disabled-feature API messages and the Environment branch policy were inspected. `gh variable list` confirmed no repository `CLOUDFLARE_DEPLOY_ENABLED` entry. See `github-review.json` for scoped observations.
+Connector reads: repository metadata, branches, main revision, rulesets, open PRs, releases, Actions runs/jobs/logs/artifact. Administrative/security endpoints unsupported by the connector were read through authenticated `gh api`; only status/configuration summaries were requested, never secret contents. Explicit disabled-feature API messages and the Environment branch policy were inspected.
 
 Initial restricted network/cache reads failed; approved read-only network/scanner calls completed. FastCtx file inspection worked, but its shell ran against an unrelated environment despite the supplied cwd. Its unrelated output was discarded; actual repository commands used built-in execution with explicit Windows workdir. No unrelated environment was modified.
 
-Docker server access failed with named-pipe permission denied. No fresh PostgreSQL/container, OS-image scan, Cloudflare build/runtime proof, actual gateway/cache/header check or live browser journey was performed. Baseline hosted CI passed those repository jobs at b7c0ae9 only; the cleanup/audit has not been pushed and has no hosted CI run yet.
+Docker server access failed with named-pipe permission denied. No fresh PostgreSQL/container, OS-image scan, actual gateway/cache/header check or live browser journey was performed. Baseline hosted CI passed those repository jobs at b7c0ae9 only; the cleanup/audit has not been pushed and has no hosted CI run yet.
 
 ## Roles and outcome
 

@@ -1,8 +1,8 @@
 # System architecture
 
-**Status:** Current repository architecture, with planned deployment work labeled separately.
+**Status:** Current repository architecture. Render configuration is prepared; live deployment is not yet verified.
 
-This describes source inspected on 2026-10-26, including the Cloudflare proof-of-concept files now present in the repository. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service for isolated frontend tests. Cloudflare configuration and a gated deployment workflow now exist in the working tree, but no live deployment or Cloudflare runtime verification has been reported.
+This describes source inspected on 2026-10-26. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service for isolated frontend tests. A Render Blueprint describes a full-stack Docker deployment, but no live Render deployment has been reported.
 
 ## Implemented components
 
@@ -33,7 +33,7 @@ Local setup and commands are in [`README.md`](../README.md) and [`backend/README
 - The [`backend/Dockerfile`](../backend/Dockerfile) installs locked Python dependencies, runs migrations, then serves Django's ASGI application with Uvicorn on port 8000. It waits for the database health check.
 - The [`frontend/Dockerfile`](../frontend/Dockerfile) builds with Bun and `NITRO_PRESET=node-server`, then serves the generated output with Node on port 3000. Its public `VITE_API_BASE_URL` is compiled at build time, defaulting to `http://localhost:8000/api` for the browser. Compose waits for backend health before starting it and configures local CORS for `http://localhost:3000`.
 
-These are local container definitions, not evidence of a successful image build, running stack, or Cloudflare deployment. For direct development, start only `db` with Compose, run Django with root [`manage.py`](../manage.py) (a shim) or [`backend/manage.py`](../backend/manage.py), and run Vite separately. Vite's `/api` development proxy forwards to Django on port 8000. The unauthenticated [`/api/health/` view](../backend/config/views.py) returns a static status; it is not a database readiness check.
+These are local container definitions, not evidence of a successful image build or running stack. For direct development, start only `db` with Compose, run Django with root [`manage.py`](../manage.py) (a shim) or [`backend/manage.py`](../backend/manage.py), and run Vite separately. Vite's `/api` development proxy forwards to Django on port 8000. The unauthenticated [`/api/health/` view](../backend/config/views.py) returns a static status; it is not a database readiness check.
 
 ## Data and security boundaries
 
@@ -54,7 +54,7 @@ Test files are present; their presence does not show that they were run or passe
 
 Commands and database prerequisites are listed in [`AGENTS.md`](../AGENTS.md) and [`README.md`](../README.md). No test result is claimed here; check the task's workflow record for verification performed on a particular change.
 
-The CI workflow (`.github/workflows/ci.yml`) runs Django unit and PostgreSQL integration tests, frontend tests/lint/build, Compose configuration and container builds, and dependency audits. A separate deployment workflow (`.github/workflows/deploy-cloudflare.yml`) is gated on successful CI for `main`, the repository variable `CLOUDFLARE_DEPLOY_ENABLED=true`, and required GitHub secrets and variables; it deploys the API and frontend Workers, then checks the public API health endpoint and frontend root. These are configured steps, not evidence that CI or deployment ran. No full deployed journal journey is configured or reported. A green CI run proves only the checks reported for that revision.
+The CI workflow (`.github/workflows/ci.yml`) runs Django unit and PostgreSQL integration tests, frontend tests/lint/build, Compose configuration and container builds, and dependency audits. The root [`render.yaml`](../render.yaml) configures Render to deploy the API and frontend Docker services after GitHub checks pass. The Render Blueprint uses an external PostgreSQL `DATABASE_URL`; it does not create an expiring Render Free database. These are configured steps, not evidence that CI or deployment ran. No full deployed journal journey is reported. A green CI run proves only the checks reported for that revision.
 
 ### Reported QA results
 
@@ -66,15 +66,15 @@ The following results were supplied in a QA update on 2026-10-26 and were not re
 
 The newer QA update supplied no run URL/ID, exact revision, or test environment; it also did not name the frontend lint command. These are attributed reports, not verification performed for this documentation update.
 
-These reports do not establish Cloudflare compatibility or a live deployment. See the dated evidence in [`ai-development-workflow.md`](ai-development-workflow.md).
+These reports do not establish compatibility with a live Render deployment. See the dated evidence in [`ai-development-workflow.md`](ai-development-workflow.md).
 
-## Test doubles and planned deployment
+## Test doubles and deployment
 
 The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. Django under `backend/config/` is the API launch path and uses PostgreSQL. Uvicorn remains a runtime dependency because the backend container uses it to serve Django's ASGI application.
 
-Cloudflare Workers for the frontend/API and a managed PostgreSQL connection through Hyperdrive are a **configured proof of concept, still unverified at runtime**. The repository contains `frontend/wrangler.jsonc`, an isolated adapter at `backend/cloudflare/src/worker.py`, its Hyperdrive binding in `backend/cloudflare/wrangler.toml`, and the conditional deployment workflow. The workflow requires successful CI on `main`, `CLOUDFLARE_DEPLOY_ENABLED=true`, and account-specific secrets/variables before deployment. It performs HTTP checks of the API health route and frontend root after deployment. No Cloudflare account credentials were available or used for this work; the workflow has not run and no live Worker, managed database, deployed smoke check, or real journal journey is verified. Python Worker package/driver compatibility, PostgreSQL transactions and locking, and Hyperdrive TLS behavior remain proof-of-concept gates. See `_docs/cicd.md` for configuration requirements and release checks.
+The Render deployment path is defined in [`render.yaml`](../render.yaml) and [`render-deployment.md`](render-deployment.md). It runs the frontend's Node server and the Django ASGI API in separate Docker web services, uses a separately supplied PostgreSQL `DATABASE_URL`, and runs migrations through the backend container startup command. Render free services may sleep when idle; this is a hobby deployment. No Render services, database, deployment, smoke check, or real journal journey are verified yet.
 
-The deployment notes in [`private-deployment.md`](private-deployment.md) describe private access, production configuration, and backup/restore preparation. Remaining work includes verifying Python Worker/package and PostgreSQL driver compatibility, configuring the deployment and Hyperdrive binding, validating current platform limits, provisioning access/secrets/backups, and recording staged smoke and restore checks. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No quota estimate, successful release, managed database, or deployed environment is asserted here.
+General production configuration and backup/restore preparation are in [`private-deployment.md`](private-deployment.md). For Render, configure the Neon PostgreSQL URL and verify service origins, migrations, CORS, synthetic user flows, backups, and restore before relying on the deployment. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No successful release or deployed environment is asserted here.
 
 ## Observability
 

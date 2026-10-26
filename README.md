@@ -26,12 +26,12 @@ The product aims to help users reflect consistently, find feedback useful, and f
 
 The repository contains a TanStack Start frontend and a Django/DRF backend. The frontend's `GrowthService` calls the Django API. Django uses PostgreSQL for account and journal data, with optional OpenAI-compatible report and follow-up generation that stays inactive when `AI_API_KEY` is blank. See [`_docs/architecture.md`](_docs/architecture.md) for current component boundaries and planned deployment status.
 
-The product direction and broader MVP scope are documented in [`_docs/specs.md`](_docs/specs.md). The private deployment preparation, production configuration checks, CORS allowlist requirements, and PostgreSQL backup/restore guidance are in [`_docs/private-deployment.md`](_docs/private-deployment.md). Production CORS requires explicit HTTPS frontend origins and is enforced by Django's CORS middleware. The Cloudflare deployment runbook includes a Python Worker/PostgreSQL compatibility gate in [`_docs/cloudflare-deployment.md`](_docs/cloudflare-deployment.md).
+The product direction and broader MVP scope are documented in [`_docs/specs.md`](_docs/specs.md). The Render Blueprint deploys the frontend and Django API as Docker services; deployment steps and free-tier limits are in [`_docs/render-deployment.md`](_docs/render-deployment.md). The API uses an external PostgreSQL database because Render's free Postgres expires after 30 days. Production CORS requires explicit HTTPS frontend origins and is enforced by Django's CORS middleware.
 
 The local OpenTelemetry stack and Grafana dashboard are described in [`_docs/observability.md`](_docs/observability.md). The source-level security review and audit limitations are in [`_docs/security-audit/run-1/REPORT.md`](_docs/security-audit/run-1/REPORT.md).
 
-CI checks, separate Django/PostgreSQL integration coverage, and the prepared
-Cloudflare deployment workflow are described in [`_docs/cicd.md`](_docs/cicd.md).
+CI checks, separate Django/PostgreSQL integration coverage, and deployment
+automation are described in [`_docs/cicd.md`](_docs/cicd.md).
 
 ## Run locally
 
@@ -112,7 +112,7 @@ See [`backend/README.md`](backend/README.md) for database configuration.
 - `docker-compose.yml` — PostgreSQL, Django API, and production-built frontend for local full-stack use.
 - `observability/` — separate local OpenTelemetry Collector, Prometheus, Loki, Tempo, and Grafana stack.
 - `.github/workflows/ci.yml` — pull-request/main backend, frontend, container, dependency-audit, and tracked-content guardrail checks.
-- `backend/cloudflare/` and `frontend/wrangler.jsonc` — prepared Cloudflare Worker configurations; deployment remains disabled pending the documented compatibility and account setup gates.
+- `render.yaml` — Render Blueprint for the frontend and API Docker services.
 - `openapi.yaml` — API contract for the backend.
 - `_docs/specs.md` — product problem, MVP decisions, expected experience, scope, and success criteria.
 - `_docs/process.md` — project work process and role responsibilities.

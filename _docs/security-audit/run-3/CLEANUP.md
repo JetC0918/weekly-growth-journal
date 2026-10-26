@@ -2,10 +2,10 @@
 
 ## Removed
 
-- **10 retired FastAPI source/test files:** `backend/app/**` and the two `backend/tests/` compatibility tests. Supported entry points already use Django; Cloudflare packaging copies only canonical Django packages. Removed tests covered the retired implementation, not active behavior.
+- **10 retired FastAPI source/test files:** `backend/app/**` and the two `backend/tests/` compatibility tests. Supported entry points already use Django. Removed tests covered the retired implementation, not active behavior.
 - **40 unreachable frontend controls and one mobile hook:** TypeScript AST import analysis rooted in all 35 non-UI source/test files retained only button, card, input, label, sonner and textarea. No visible UI behavior was intentionally changed. Independent QA found no unresolved local TypeScript/JavaScript imports.
 - **14 unused Python lock entries:** removed FastAPI, httpx, pytest and their unused transitive graph; root lock shrank from 58 to 44 entries. Uvicorn remains the active Django server. No dependencies were added or upgraded; frontend manifest/lock are unchanged.
-- **Generated caches:** removed `.audit-uv-cache`, `.qa-uv-cache` and the isolated Worker `.uv-cache`: 3,898 files totaling 75,669,819 bytes (about 72 MiB). Removed source bytecode caches after verification; exact directories are retained in `evidence/removed-bytecode.json`. Recursive removals checked resolved workspace boundaries first.
+- **Generated caches:** removed `.audit-uv-cache`, `.qa-uv-cache` and an isolated runtime `.uv-cache`: 3,898 files totaling 75,669,819 bytes (about 72 MiB). Removed source bytecode caches after verification. Recursive removals checked resolved workspace boundaries first.
 
 There are **51 deleted source files** in `evidence/cleanup-manifest.json`. Current README/backend/testing/architecture/specialist references were updated. The generic frontend starter README now describes this application's actual commands and architecture. Historical workflow and audit records preserve their original statements.
 

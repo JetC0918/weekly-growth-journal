@@ -1,7 +1,7 @@
+.git
 node_modules
 .output
 .tanstack
-.wrangler
-.git
-coverage
+.nitro
 dist
+coverage

@@ -1,7 +1,7 @@
 """Run real Django suites on synthetic SQLite memory data, never the configured DB.
 
 This verifies request/model behavior; it does not establish PostgreSQL locking,
-TLS, Hyperdrive compatibility or deployed behavior.
+TLS requirements or deployed behavior.
 """
 import os
 import sys

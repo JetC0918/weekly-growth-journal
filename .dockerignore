@@ -1,5 +1,7 @@
 .git
+.github
 .venv
+**/.venv
 .pytest_cache
 __pycache__
 *.py[cod]
@@ -9,4 +11,14 @@ __pycache__
 frontend/node_modules
 frontend/.output
 frontend/.tanstack
-frontend/.wrangler
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/node_modules
+**/.output
+**/dist
+**/build
+observability
+output

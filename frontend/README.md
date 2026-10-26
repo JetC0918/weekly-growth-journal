@@ -26,8 +26,8 @@ bun run build
 
 `VITE_API_BASE_URL` overrides the API base URL, including the `/api` path. It is
 compiled into the browser build, so set it before building for a different API
-origin. See [the deployment runbook](../_docs/cloudflare-deployment.md) for the
-prepared Cloudflare configuration and remaining release gates.
+origin. See the [Render deployment guide](../_docs/render-deployment.md) for
+service setup and release verification steps.
 
 ## Authentication and rendering
 

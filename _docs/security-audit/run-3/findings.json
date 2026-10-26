@@ -1,7 +1,7 @@
 [
   {
     "verdict": "rejected",
-    "reason": "Production startup can create callable ASGI/WSGI handlers with development signing-key defaults when variables are omitted, because production checks are deployment-only (settings.py:10,117; checks.py:61; asgi.py:7; Dockerfile:16). This is a reproduced release guard gap, but the claimed deployed auth bypass depends on unverified live key and ingress configuration. The private runbook requires checks and the Cloudflare adapter requires key bindings. Retain as a release blocker, not a confirmed production compromise."
+    "reason": "Production startup can create callable ASGI/WSGI handlers with development signing-key defaults when variables are omitted, because production checks are deployment-only (settings.py:10,117; checks.py:61; asgi.py:7; Dockerfile:16). This is a reproduced release guard gap, but the claimed deployed auth bypass depends on unverified live key and ingress configuration. The private runbook requires checks. Retain as a release blocker, not a confirmed production compromise."
   },
   {
     "verdict": "rejected",

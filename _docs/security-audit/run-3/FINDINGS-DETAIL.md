@@ -14,7 +14,7 @@ Observed code path:
 
 Two reviewers reproduced callable production handlers with default keys using synthetic configuration and no real database. Explicit checks returned E003/E004/E006/E009/E011/E012. This confirms the guard gap. It does not show any live instance has absent key configuration, an exposed origin, or a bypassed private gateway.
 
-Counter-evidence: `_docs/private-deployment.md:25–35,50–52` requires deployment checks; `backend/cloudflare/src/worker.py:20–29,40–49` requires and injects key/host/CORS bindings. Under the skill's source-visibility rule, **rejected as a confirmed deployed auth bypass**, retained as a release blocker. The expected fix is automatic validation before serving traffic and negative staging startup checks. A baseline private journal must validate its chosen deployment configuration; comparing unrelated default-development settings does not establish an attack.
+Counter-evidence: `_docs/private-deployment.md:25–35,50–52` requires deployment checks. Under the skill's source-visibility rule, **rejected as a confirmed deployed auth bypass**, retained as a release blocker. The expected fix is automatic validation before serving traffic and negative staging startup checks. A baseline private journal must validate its chosen deployment configuration; comparing unrelated default-development settings does not establish an attack.
 
 ## Rejected claim B: password change violates a promised bearer-revocation boundary
 
