@@ -13,6 +13,8 @@ export interface GrowthService {
 
   /** AI: suggest follow-up questions for a draft */
   suggestFollowUps(input: SaveReviewInput): Promise<string[]>;
+  /** Marks a review complete without generating AI feedback. */
+  completeReviewWithoutFeedback(id: string): Promise<Review>;
   /** Marks the review completed and generates (or regenerates) its feedback report */
   completeReview(id: string): Promise<Report>;
   getReport(reviewId: string): Promise<Report | null>;

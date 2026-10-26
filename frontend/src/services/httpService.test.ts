@@ -91,6 +91,7 @@ describe("HTTP GrowthService", () => {
       jsonResponse(sampleReview),
       emptyResponse(),
       jsonResponse(["A follow-up?"]),
+      jsonResponse(sampleReview),
       jsonResponse(sampleReport),
       jsonResponse(null),
       jsonResponse(sampleReport),
@@ -107,6 +108,7 @@ describe("HTTP GrowthService", () => {
     expect(await service.saveReview(sampleInput)).toEqual(sampleReview);
     await expect(service.deleteReview("review/one")).resolves.toBeUndefined();
     expect(await service.suggestFollowUps(sampleInput)).toEqual(["A follow-up?"]);
+    expect(await service.completeReviewWithoutFeedback("review/one")).toEqual(sampleReview);
     expect(await service.completeReview("review/one")).toEqual(sampleReport);
     expect(await service.getReport("review/one")).toBeNull();
     expect(
@@ -127,6 +129,7 @@ describe("HTTP GrowthService", () => {
       ["https://journal.example/api/reviews", "POST"],
       ["https://journal.example/api/reviews/review%2Fone", "DELETE"],
       ["https://journal.example/api/reviews/suggest-follow-ups", "POST"],
+      ["https://journal.example/api/reviews/review%2Fone/complete-without-feedback", "POST"],
       ["https://journal.example/api/reviews/review%2Fone/complete", "POST"],
       ["https://journal.example/api/reviews/review%2Fone/report", "GET"],
       [
@@ -138,7 +141,7 @@ describe("HTTP GrowthService", () => {
       ["https://journal.example/api/commitments/before?weekStart=2026-10-19", "GET"],
       ["https://journal.example/api/data", "DELETE"],
     ]);
-    expect(getAccessToken).toHaveBeenCalledTimes(13);
+    expect(getAccessToken).toHaveBeenCalledTimes(14);
 
     for (const [, init] of requests) {
       expect(init?.headers).toMatchObject({
@@ -148,8 +151,8 @@ describe("HTTP GrowthService", () => {
     }
     expect(requests[3]?.[1]?.body).toBe(JSON.stringify(sampleInput));
     expect(requests[5]?.[1]?.body).toBe(JSON.stringify(sampleInput));
-    expect(requests[8]?.[1]?.body).toBe(JSON.stringify({ status: "accepted" }));
-    expect(requests[9]?.[1]?.body).toBe(JSON.stringify({ text: "Keep going", measure: "Once" }));
+    expect(requests[9]?.[1]?.body).toBe(JSON.stringify({ status: "accepted" }));
+    expect(requests[10]?.[1]?.body).toBe(JSON.stringify({ text: "Keep going", measure: "Once" }));
     expect(requests[0]?.[1]?.headers).not.toHaveProperty("Content-Type");
   });
 

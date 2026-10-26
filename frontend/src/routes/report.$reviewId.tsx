@@ -35,7 +35,7 @@ export const Route = createFileRoute("/report/$reviewId")({
       queryClient.ensureQueryData(reportQuery(params.reviewId)),
       queryClient.ensureQueryData(commitmentQuery(params.reviewId)),
     ]);
-    if (!review || !report) throw notFound();
+    if (!review || (!report && review.status !== "completed")) throw notFound();
   },
   component: ReportPage,
 });
@@ -58,7 +58,7 @@ function ReportPage() {
   const [measure, setMeasure] = useState(commitment?.measure ?? "");
   const [savingCommitment, setSavingCommitment] = useState(false);
   const [deletingReview, setDeletingReview] = useState(false);
-  if (!review || !report) return null;
+  if (!review) return null;
 
   const update = async (section: ReportSection, id: string, patch: Partial<Insight>) => {
     try {
@@ -77,31 +77,41 @@ function ReportPage() {
         <p className="text-sm uppercase tracking-widest text-muted-foreground">
           {formatWeek(review.weekStart)}
         </p>
-        <h1 className="mt-2 text-4xl font-semibold">Your feedback</h1>
+        <h1 className="mt-2 text-4xl font-semibold">
+          {report ? "Your feedback" : "Review complete"}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Generated from your own words.{" "}
-          <span className="font-medium text-observation-foreground">Observations</span> restate what
-          you wrote; <span className="font-medium text-hypothesis-foreground">hypotheses</span> are
-          interpretations that may be wrong — accept, reject or correct them.
+          {report
+            ? (
+                <>
+                  Generated from your own words.{" "}
+                  <span className="font-medium text-observation-foreground">Observations</span>{" "}
+                  restate what you wrote;{" "}
+                  <span className="font-medium text-hypothesis-foreground">hypotheses</span> are
+                  interpretations that may be wrong — accept, reject or correct them.
+                </>
+              )
+            : "Your reflection is saved and complete. No AI feedback report was generated."}
         </p>
       </div>
 
-      {SECTIONS.map(({ key, title }) => (
-        <section key={key} className="space-y-3">
-          <h2 className="text-2xl">{title}</h2>
-          {report[key].length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {key === "patterns"
-                ? "Not enough history yet. Patterns appear after a few weeks."
-                : "Nothing here — there wasn't enough detail to say."}
-            </p>
-          ) : (
-            report[key].map((i) => (
-              <InsightCard key={i.id} insight={i} onChange={(p) => update(key, i.id, p)} />
-            ))
-          )}
-        </section>
-      ))}
+      {report &&
+        SECTIONS.map(({ key, title }) => (
+          <section key={key} className="space-y-3">
+            <h2 className="text-2xl">{title}</h2>
+            {report[key].length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {key === "patterns"
+                  ? "Not enough history yet. Patterns appear after a few weeks."
+                  : "Nothing here — there wasn't enough detail to say."}
+              </p>
+            ) : (
+              report[key].map((i) => (
+                <InsightCard key={i.id} insight={i} onChange={(p) => update(key, i.id, p)} />
+              ))
+            )}
+          </section>
+        ))}
 
       <section className="space-y-4 rounded-xl border-2 border-primary/30 bg-card p-6 shadow-soft">
         <p className="text-xs font-semibold uppercase tracking-widest text-accent">
