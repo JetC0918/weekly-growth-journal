@@ -116,6 +116,8 @@ export function createHttpService(
     },
     suggestFollowUps: (input: SaveReviewInput) =>
       request<string[]>("reviews/suggest-follow-ups", { method: "POST", body: input }),
+    completeReviewWithoutFeedback: (id) =>
+      request<Review>(`reviews/${encodeURIComponent(id)}/complete-without-feedback`, { method: "POST" }),
     completeReview: (id) =>
       request<Report>(`reviews/${encodeURIComponent(id)}/complete`, { method: "POST" }),
     getReport: (reviewId) =>

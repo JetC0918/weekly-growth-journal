@@ -148,6 +148,37 @@ class ReviewDetailView(JournalView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+class CompleteReviewWithoutFeedbackView(JournalView):
+    def post(self, request, review_id):
+        parsed = _parse_id(review_id, "rev")
+        if parsed is None:
+            return Response({"detail": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        with transaction.atomic():
+            review = Review.objects.select_for_update().filter(user=request.user, pk=parsed).first()
+            if review is None:
+                return Response({"detail": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            has_content = any(
+                isinstance(value, str) and value.strip()
+                for value in [*review.answers.values(), review.free_writing]
+            ) or any(
+                isinstance(item.get("answer"), str) and item["answer"].strip()
+                for item in review.follow_ups
+            )
+            if not has_content:
+                return Response(
+                    {"detail": InsufficientReflectionContent.detail},
+                    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                )
+
+            review.status = Review.Status.COMPLETED
+            review.save(update_fields=("status", "updated_at"))
+
+        record_workflow_event("review.completed", "without_feedback")
+        return self.json_response(review, ReviewSerializer)
+
+
 class FollowUpSuggestionsView(JournalView):
     def post(self, request):
         serializer = SaveReviewSerializer(data=request.data)
