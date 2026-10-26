@@ -20,6 +20,28 @@ dependencies and has its own `uv.lock` for reproducible deployment installs. The
 Nitro target, while the regular Docker build continues to select its existing
 Node server target.
 
+## Staging deployment
+
+The `Deploy to Cloudflare staging` workflow is a manual release to isolated
+Workers. In GitHub Actions, select the workflow, choose `main`, check the
+confirmation input, and run it. It deploys `weekly-growth-journal-api-staging`
+and `weekly-growth-journal-frontend-staging` using the `cloudflare-staging`
+GitHub Environment. It never runs database migrations; apply and verify them
+against the staging database from a trusted environment before deploying.
+
+Configure the `cloudflare-staging` Environment with these variables:
+
+- `CLOUDFLARE_HYPERDRIVE_ID`: the staging Supabase Hyperdrive ID.
+- `CLOUDFLARE_API_ORIGIN`: exact HTTPS origin for the staging API Worker.
+- `CLOUDFLARE_FRONTEND_ORIGIN`: exact HTTPS origin for the staging frontend Worker.
+
+Configure these environment secrets: `CLOUDFLARE_API_TOKEN`,
+`CLOUDFLARE_ACCOUNT_ID`, `CF_DJANGO_SECRET_KEY`, `CF_TOKEN_SIGNING_KEY`,
+`CF_DJANGO_ALLOWED_HOSTS`, and `CF_CORS_ALLOWED_ORIGINS`. Use staging-only
+signing keys. The allowed-host value must include the API hostname without a
+scheme; the CORS value must exactly equal the frontend origin. Keep the
+production environment and deployment switch separate.
+
 ## Required GitHub configuration
 
 Add these GitHub Actions **secrets**:
