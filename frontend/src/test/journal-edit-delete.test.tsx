@@ -140,6 +140,7 @@ describe("journal edit and deletion flows", () => {
     const reopened = await services.getReviewForWeek(WEEK);
     const listed = await services.listReviews();
     expect(reopened?.answers.learned).toBe("Planning helps me begin sooner");
+    expect(reopened?.followUps).toEqual([{ question: "What helped?", answer: "A short plan" }]);
     expect(listed).toHaveLength(1);
     expect(state.reviews()).toHaveLength(1);
   });
