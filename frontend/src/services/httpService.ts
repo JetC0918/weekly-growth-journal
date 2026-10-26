@@ -19,7 +19,7 @@ export class ApiError extends Error {
   }
 }
 
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
+const configuredBaseUrl = import.meta.env["VITE_API_BASE_URL"] || "/api";
 
 function joinUrl(baseUrl: string, path: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
@@ -46,7 +46,7 @@ export function createHttpService(
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const token = auth.getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     let response: Response;
     try {

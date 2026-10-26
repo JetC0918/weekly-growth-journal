@@ -1,5 +1,8 @@
 from collections.abc import Mapping
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 
@@ -30,3 +33,14 @@ class CredentialsSerializer(serializers.Serializer):
         if extra_errors:
             raise serializers.ValidationError(extra_errors)
         return validated_data
+
+
+class RegistrationSerializer(CredentialsSerializer):
+    def validate_password(self, value):
+        username = self.initial_data.get("username") if isinstance(self.initial_data, Mapping) else None
+        user = get_user_model()(username=username) if username else None
+        try:
+            validate_password(value, user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(exc.messages) from exc
+        return value

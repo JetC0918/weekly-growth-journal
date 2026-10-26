@@ -104,6 +104,13 @@ class AuthenticationAPITests(APITestCase):
         self.assertIn(["body", "password"], locations)
         self.assertTrue(all({"loc", "msg", "type"}.issubset(error) for error in response.data["detail"]))
 
+    def test_registration_enforces_configured_django_password_validators(self):
+        response = self._register("numeric-password", "12345678")
+
+        self.assertEqual(response.status_code, 422)
+        self.assertTrue(any(error["loc"] == ["body", "password"] for error in response.data["detail"]))
+        self.assertFalse(get_user_model().objects.filter(username="numeric-password").exists())
+
     def test_bearer_token_authentication_associates_the_authenticated_user(self):
         registration = self._register()
         user = get_user_model().objects.get(username="growthuser")

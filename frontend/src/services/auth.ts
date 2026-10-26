@@ -41,7 +41,7 @@ interface AuthServiceOptions {
   now?: () => number;
 }
 
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
+const configuredBaseUrl = import.meta.env["VITE_API_BASE_URL"] || "/api";
 
 const signedOutSnapshot = (): AccountSessionSnapshot => ({
   isAuthenticated: false,

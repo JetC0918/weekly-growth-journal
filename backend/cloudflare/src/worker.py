@@ -62,8 +62,9 @@ def _get_application(env):
             if _application is None:
                 _set_required_environment(env)
                 from django.core.wsgi import get_wsgi_application
+                from backend.config.startup import get_checked_application
 
-                _application = get_wsgi_application()
+                _application = get_checked_application(get_wsgi_application)
     return _application
 
 

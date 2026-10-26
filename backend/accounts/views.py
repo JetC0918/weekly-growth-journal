@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from backend.config.telemetry import record_workflow_event
 
-from .serializers import CredentialsSerializer
+from .serializers import CredentialsSerializer, RegistrationSerializer
 from .tokens import create_access_token
 
 
@@ -18,7 +18,7 @@ class PublicAuthView(APIView):
 
 class RegisterView(PublicAuthView):
     def post(self, request):
-        serializer = CredentialsSerializer(data=request.data)
+        serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         credentials = serializer.validated_data
         username = credentials["username"].casefold()
