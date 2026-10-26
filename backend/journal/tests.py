@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase, override_settings, tag
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from backend.accounts.tokens import create_access_token
@@ -221,14 +222,26 @@ class JournalAPITests(TestCase):
         review = self.create_review(date(2025, 1, 6))
         report = self.client.post(f"/api/reviews/{review['id']}/complete").json()
         insight = report["takeaways"][0]
-        patched = self.client.patch(
-            f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
-            {"status": "accepted", "correction": "This reflects my week."},
-            format="json",
-        )
+        with CaptureQueriesContext(connection) as captured:
+            patched = self.client.patch(
+                f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
+                {"status": "accepted", "correction": "This reflects my week."},
+                format="json",
+            )
         self.assertEqual(patched.status_code, 200)
+        self.assertTrue(any("FOR UPDATE" in query["sql"].upper() for query in captured))
         self.assertEqual(patched.json()["takeaways"][0]["status"], "accepted")
         self.assertEqual(patched.json()["takeaways"][0]["correction"], "This reflects my week.")
+
+        strength = report["strengths"][0]
+        patched_strength = self.client.patch(
+            f"/api/reviews/{review['id']}/report/strengths/insights/{strength['id']}",
+            {"status": "rejected", "correction": "I want to revisit this next week."},
+            format="json",
+        )
+        self.assertEqual(patched_strength.status_code, 200)
+        self.assertEqual(patched_strength.json()["takeaways"][0]["status"], "accepted")
+        self.assertEqual(patched_strength.json()["strengths"][0]["status"], "rejected")
         self.assertEqual(self.client.patch(
             f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
             {},

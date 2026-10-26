@@ -396,13 +396,15 @@ deployed and checked.
 - **AI work:** Added session-generation checks to discard stale API responses
   and old 401s. Report completion now compares the locked review against its
   provider input snapshot and returns 409 or 404 when it changed or was deleted;
-  review edits invalidate old reports. Deploy smoke now parses the exact health
+  review edits invalidate old reports; concurrent insight edits lock their
+  owned report row during JSON read-modify-save. Deploy smoke parses the health
   JSON, requires unauthenticated journal access to return 401, and checks for
   the branded React root and a built JavaScript asset. No dependencies added.
-- **AI review:** Final source QA passed by inspection after two corrections.
+- **AI review:** Final source QA passed by inspection after corrective iterations.
   The migration must be applied before the new app code; legacy registration
   must be quiesced around migration/backfill. QuerySet bulk updates, raw fixture
   loads, and an authenticated staging journey remain operational considerations.
+  The [Cloudflare runbook](cloudflare-deployment.md) records the migration gate.
   No human review is recorded.
 - **Verification:** `uv run python backend/manage.py makemigrations --check
   --dry-run` reported no model changes; `uv run python

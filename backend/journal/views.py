@@ -253,16 +253,19 @@ class InsightUpdateView(JournalView):
         if any(value is None for value in changes.values()):
             return _bad_request("Insight patch values cannot be null")
         review = self.get_review(request, review_id)
-        report = FeedbackReport.objects.filter(review=review).first() if review else None
-        if report is None:
+        if review is None:
             return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
-        insights = getattr(report, section)
-        match = next((item for item in insights if item.get("id") == insight_id), None)
-        if match is None:
-            return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
-        match.update(changes)
-        setattr(report, section, insights)
-        report.save(update_fields=(section,))
+        with transaction.atomic():
+            report = FeedbackReport.objects.select_for_update().filter(review=review).first()
+            if report is None:
+                return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
+            insights = getattr(report, section)
+            match = next((item for item in insights if item.get("id") == insight_id), None)
+            if match is None:
+                return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
+            match.update(changes)
+            setattr(report, section, insights)
+            report.save(update_fields=(section,))
         record_workflow_event("insight.updated")
         return self.json_response(report, ReportSerializer)
 
