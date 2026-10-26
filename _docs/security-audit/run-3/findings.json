@@ -1,0 +1,10 @@
+[
+  {
+    "verdict": "rejected",
+    "reason": "Production startup can create callable ASGI/WSGI handlers with development signing-key defaults when variables are omitted, because production checks are deployment-only (settings.py:10,117; checks.py:61; asgi.py:7; Dockerfile:16). This is a reproduced release guard gap, but the claimed deployed auth bypass depends on unverified live key and ingress configuration. The private runbook requires checks and the Cloudflare adapter requires key bindings. Retain as a release blocker, not a confirmed production compromise."
+  },
+  {
+    "verdict": "rejected",
+    "reason": "Existing 24-hour subject/expiry-only bearer tokens remain accepted after a password change and stop when the account is disabled (tokens.py:11,18-47; authentication.py:22-32). The claim of violating a promised revocation boundary was not supported: browser sign-out explicitly discards local memory only, no reset/revoke API is promised, and no independent token-acquisition vulnerability was found. Retain the recovery limitation as hardening."
+  }
+]

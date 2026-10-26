@@ -323,3 +323,50 @@ deployed and checked.
 - **Automation:** No CI or deployment workflow was triggered by this task.
 - **Outcome:** Documentation update complete; live deployment remains
   unverified.
+
+### 2026-10-26 — Spring cleanup and predeployment security audit
+
+- **Task/prompt (summary):** User requested removing unnecessary files and a
+  thorough security-audit skill review of the whole local repository and GitHub
+  before deployment. No issue was supplied; no deployment was authorized.
+- **Baseline/scope:** Clean tree at `b7c0ae9`, matching remote main. Audit output
+  follows the existing `_docs/security-audit/run-3/` convention. Previous two
+  source reviews were read, with their historical evidence kept intact.
+- **Acceptance criteria:** Remove only demonstrably obsolete/generated content;
+  preserve supported behavior; map all trust/input surfaces; validate concrete
+  security claims independently; inspect actual GitHub controls/scan evidence;
+  deliver reconciled prose and schema-valid JSON; run appropriate checks and
+  commit locally. No dependency additions/upgrades or external writes.
+- **Plan/handoffs:** PM/recon, three hunters, an independent candidate validator,
+  cleanup engineer and independent QA supplied bounded results. Audit agents
+  wrote no files. Primary assembled artifacts and fetched/ran evidence checks,
+  a documented deviation from pure orchestration to honor the audit skill's
+  artifact-ownership rule. This record was assembled after verification; the
+  conversation retains intake/handoff timing. Human review is not recorded.
+- **AI work:** Retired FastAPI prototype/compatibility tests, removed unreachable
+  frontend controls/hook, pruned 14 unused Python lock entries, updated current
+  docs and cleared generated caches. Cleanup commit: `f56a513`. Preserved active
+  tests/mocks, Uvicorn, migrations, historical evidence and frontend lockfile.
+- **Verification:** 29 Django unit tests and 32 frontend tests passed; lint had
+  zero errors/two existing warnings; production frontend build and lock check
+  passed. Independent synthetic SQLite run passed 61 tests; PostgreSQL-only
+  journey excluded. Initial audit harness attempt had four harness-related
+  failures, corrected without changing product/tests. Fresh root/Cloudflare
+  Python scans reported no known vulnerabilities. Historical blob-pattern scan
+  checked 21 reachable commits/273 blobs, no matches. Full evidence/limitations
+  are in [run 3 verification](security-audit/run-3/evidence/verification.md).
+- **Security review:** No confirmed application exploit survived validation.
+  Startup checks, advisory/release gates and GitHub protections remain release
+  concerns. Actual hosted frontend scan has 25 advisory entries across nine
+  package names/18 advisory URLs, including one critical database rating; no
+  application RCE claim is made from that count. Main unprotected, scanners
+  disabled, deployment skipped. Two rejected claims and the prose were
+  independently checked; findings schema validation passed.
+- **Tools/access:** FastCtx file inspection; explicit-workdir built-in commands
+  because FastCtx shell did not reach this repository; GitHub connector and
+  read-only CLI fallback for unsupported settings. Docker named-pipe access
+  failed, so no fresh PostgreSQL/container/deployed test. One hunter's final
+  turn was service-blocked; no blocked action is claimed as executed.
+- **Outcome:** Scoped cleanup/report QA PASS. [Report](security-audit/run-3/REPORT.md)
+  recommends holding deployment until listed release gates and actual staging
+  checks pass. No push, PR, external post, GitHub setting change or deployment.

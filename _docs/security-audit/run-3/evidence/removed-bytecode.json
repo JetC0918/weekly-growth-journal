@@ -1,0 +1,54 @@
+[
+  {
+    "path": "agent-hooks\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "backend\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "backend\\accounts\\__pycache__",
+    "files": 8
+  },
+  {
+    "path": "backend\\app\\__pycache__",
+    "files": 5
+  },
+  {
+    "path": "backend\\app\\routers\\__pycache__",
+    "files": 3
+  },
+  {
+    "path": "backend\\cloudflare\\scripts\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "backend\\cloudflare\\src\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "backend\\config\\__pycache__",
+    "files": 12
+  },
+  {
+    "path": "backend\\feedback\\__pycache__",
+    "files": 5
+  },
+  {
+    "path": "backend\\journal\\__pycache__",
+    "files": 7
+  },
+  {
+    "path": "backend\\journal\\migrations\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "backend\\tests\\__pycache__",
+    "files": 2
+  },
+  {
+    "path": "mcp-server\\src\\__pycache__",
+    "files": 1
+  }
+]
