@@ -17,7 +17,7 @@ This describes source inspected on 2026-10-26, including the Cloudflare proof-of
 
 The checked-in [`openapi.yaml`](../openapi.yaml) describes the intended HTTP contract. The frontend service and Django URL/view/serializer code are the implementation; the contract alone does not establish that every documented behavior is implemented or deployed. For example, absent individual resources are returned as JSON `null` in several Django views, while deletes return `204`.
 
-The contract's introductory claim that the frontend uses a local mock and its FastAPI validation wording are legacy prose. Django deliberately retains the documented `422` validation-detail array for account requests through [`accounts/exceptions.py`](../backend/accounts/exceptions.py); journal validation returns `400` with a detail string. The HTTP client tests use explicit request expectations and mocked responses, not an automatic OpenAPI conformance validator.
+The contract now describes the active frontend and Django implementation. Django deliberately returns a `422` validation-detail array for account requests through [`accounts/exceptions.py`](../backend/accounts/exceptions.py); journal validation returns `400` with a detail string. The HTTP client tests use explicit request expectations and mocked responses, not an automatic OpenAPI conformance validator.
 
 ## Request and data flow
 

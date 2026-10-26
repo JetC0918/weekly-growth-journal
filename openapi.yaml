@@ -3,16 +3,35 @@ info:
   title: Weekly Growth Journal API
   version: 1.0.0
   description: >-
-    HTTP contract for the backend expected by the frontend GrowthService
-    interface. The frontend currently uses a local mock and does not define
-    HTTP paths; the paths below are a REST mapping of that interface. Journal
-    data operations require a bearer token.
+    HTTP contract consumed by the active frontend GrowthService and implemented
+    by the Django REST API. Authentication and health endpoints are public;
+    journal data operations require a bearer token. The frontend sends
+    weekStart as a Monday by convention, but the API currently accepts any date.
 security:
   - BearerAuth: []
 servers:
   - url: http://localhost:8000/api
     description: Local development server
 paths:
+  /health/:
+    get:
+      operationId: getHealth
+      summary: Check API availability
+      description: Returns static API process status and does not check database readiness.
+      security: []
+      responses:
+        '200':
+          description: API process is available.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
   /auth/register:
     post:
       operationId: register
@@ -34,7 +53,7 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/AuthValidationError'
   /auth/login:
     post:
       operationId: login
@@ -56,7 +75,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/AuthValidationError'
   /reviews:
     get:
       operationId: listReviews
@@ -113,7 +132,7 @@ paths:
         - name: weekStart
           in: path
           required: true
-          description: Monday of the reviewed week.
+          description: Calendar date used as the week key. The frontend convention is Monday; the API does not enforce that convention.
           schema:
             type: string
             format: date
@@ -128,6 +147,8 @@ paths:
                   - type: 'null'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /reviews/{reviewId}:
     parameters:
@@ -341,6 +362,8 @@ paths:
                   - type: 'null'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
 
   /data:
     delete:
@@ -415,12 +438,12 @@ components:
       required: [weekStart, answers, freeWriting, followUps]
       properties:
         id:
-          type: string
-          description: Optional review id; if omitted, an existing review may be matched by weekStart.
+          type: [string, 'null']
+          description: Optional review id; blank or null is treated as omitted. If omitted, an existing review may be matched by weekStart.
         weekStart:
           type: string
           format: date
-          description: Monday of the reviewed week.
+          description: Calendar date used as the week key. The frontend convention is Monday; the API does not enforce that convention.
         answers:
           $ref: '#/components/schemas/Answers'
         freeWriting:
@@ -470,7 +493,7 @@ components:
           type: string
           enum: [pending, accepted, rejected]
         correction:
-          type: string
+          type: [string, 'null']
 
     ReportSection:
       type: string
@@ -582,6 +605,7 @@ components:
 
     HTTPValidationError:
       type: object
+      required: [detail]
       properties:
         detail:
           type: array
@@ -638,8 +662,11 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    ValidationError:
-      description: FastAPI request validation failed before the operation ran.
+    AuthValidationError:
+      description: >-
+        Django account request validation failed. The custom account exception
+        handler returns a 422 detail array with field locations. Journal
+        request validation instead returns a 400 Error with a string detail.
       content:
         application/json:
           schema:

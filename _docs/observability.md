@@ -67,3 +67,12 @@ This setup is for local development and rubric demonstration. It has no remote
 authentication, TLS, backups, alert routing, or production retention controls.
 Keep it on a trusted machine. For deployment, use an authenticated OTel-compatible
 backend and decide privacy-safe retention before enabling exports.
+
+## Latest local verification attempt
+
+On 2026-10-26, the Docker CLI was available but could not connect to the Docker
+Engine named pipe (`npipe:////./pipe/docker_engine`); the command returned
+`permission denied`. The observability Compose project could not be started from
+this session, so telemetry collection and the correlated dashboard journey
+remain unverified here. This environment result does not distinguish a stopped
+Docker Desktop service from an access restriction on the named pipe.
