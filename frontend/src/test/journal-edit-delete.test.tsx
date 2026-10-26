@@ -120,6 +120,7 @@ describe("journal edit and deletion flows", () => {
     expect(screen.getByLabelText("Anything else on your mind? (free writing)")).toHaveValue(
       "A saved thought",
     );
+    expect(screen.queryByLabelText("What helped?")).not.toBeInTheDocument();
     expect(screen.getByLabelText("What happened?")).toHaveValue("I tried once");
     expect(screen.getByLabelText("What did you learn from it?")).toHaveValue("Start small");
 
@@ -130,7 +131,11 @@ describe("journal edit and deletion flows", () => {
 
     expect(await screen.findByText("Draft saved")).toBeInTheDocument();
     expect(state.saveReview).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "rev-existing", weekStart: WEEK }),
+      expect.objectContaining({
+        id: "rev-existing",
+        weekStart: WEEK,
+        followUps: [{ question: "What helped?", answer: "A short plan" }],
+      }),
     );
     const reopened = await services.getReviewForWeek(WEEK);
     const listed = await services.listReviews();
