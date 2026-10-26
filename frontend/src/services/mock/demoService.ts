@@ -11,8 +11,7 @@ const DEMO_PREFIX = "weekly-growth-journal:demo:";
 
 function demoStore(): KeyValueStore {
   const fallback = memoryStore();
-  const browserStorage = () =>
-    typeof window === "undefined" ? null : window.localStorage;
+  const browserStorage = () => (typeof window === "undefined" ? null : window.localStorage);
 
   return {
     getItem(key) {
