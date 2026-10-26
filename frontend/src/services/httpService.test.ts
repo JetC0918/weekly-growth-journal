@@ -61,13 +61,24 @@ const sampleInput: SaveReviewInput = {
 
 function setup() {
   const getAccessToken = vi.fn(() => "current-token");
+  let sessionGeneration = 1;
+  const getSessionGeneration = vi.fn(() => sessionGeneration);
   const handleUnauthorized = vi.fn();
   const fetcher = vi.fn<typeof fetch>();
   const service = createHttpService(
-    { getAccessToken, handleUnauthorized },
+    { getAccessToken, getSessionGeneration, handleUnauthorized },
     { baseUrl: "https://journal.example/api/", fetcher },
   );
-  return { service, fetcher, getAccessToken, handleUnauthorized };
+  return {
+    service,
+    fetcher,
+    getAccessToken,
+    getSessionGeneration,
+    handleUnauthorized,
+    changeSession: () => {
+      sessionGeneration += 1;
+    },
+  };
 }
 
 describe("HTTP GrowthService", () => {
@@ -175,6 +186,44 @@ describe("HTTP GrowthService", () => {
       message: "401: Bearer token required",
     });
     expect(handleUnauthorized).toHaveBeenCalledOnce();
+    expect(handleUnauthorized).toHaveBeenCalledWith(1);
+  });
+
+  it("does not let a delayed 401 from an old session expire the new session", async () => {
+    const { service, fetcher, handleUnauthorized, changeSession } = setup();
+    let releaseResponse!: (response: Response) => void;
+    fetcher.mockReturnValueOnce(
+      new Promise<Response>((resolve) => {
+        releaseResponse = resolve;
+      }),
+    );
+
+    const pending = service.listReviews();
+    changeSession();
+    releaseResponse(jsonResponse({ detail: "expired" }, 401));
+
+    await expect(pending).rejects.toMatchObject({ name: "ApiError", status: 0 });
+    expect(handleUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it("discards a successful response that completes after the session changes", async () => {
+    const { service, fetcher, changeSession } = setup();
+    let releaseBody!: (body: unknown) => void;
+    fetcher.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () =>
+        new Promise((resolve) => {
+          releaseBody = resolve;
+        }),
+    } as unknown as Response);
+
+    const pending = service.listReviews();
+    await vi.waitFor(() => expect(releaseBody).toBeTypeOf("function"));
+    changeSession();
+    releaseBody([{ id: "old-session-review" }]);
+
+    await expect(pending).rejects.toMatchObject({ name: "ApiError", status: 0 });
   });
 
   it("keeps status and fallback detail for non-JSON and empty errors", async () => {

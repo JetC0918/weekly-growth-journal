@@ -1,9 +1,10 @@
-from datetime import date
+from datetime import date, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.test import TestCase, override_settings, tag
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 
 from backend.accounts.tokens import create_access_token
@@ -77,7 +78,6 @@ class JournalAPITests(TestCase):
         self.assertEqual(created["status"], "draft")
         self.assertTrue(created["id"].startswith("rev_"))
         self.assertEqual(Review.objects.filter(user=self.user, week_start=week).count(), 1)
-
         second_client = APIClient()
         second_client.credentials(HTTP_AUTHORIZATION=f"Bearer {create_access_token(self.user.pk)}")
         fetched = second_client.get(f"/api/reviews/{created['id']}").json()
@@ -92,6 +92,20 @@ class JournalAPITests(TestCase):
         self.assertEqual(updated.json()["createdAt"], created["createdAt"])
         self.assertEqual(updated.json()["freeWriting"], "Edited reflection after reopening.")
         self.assertEqual(Review.objects.filter(user=self.user, week_start=week).count(), 1)
+
+    def test_saving_an_edited_completed_review_invalidates_its_report(self):
+        review = self.create_review()
+        self.assertEqual(self.client.post(f"/api/reviews/{review['id']}/complete").status_code, 200)
+        edited_payload = review_payload(date(2025, 1, 6))
+        edited_payload["id"] = review["id"]
+        edited_payload["freeWriting"] = "This reflection has changed."
+
+        saved = self.client.post("/api/reviews", edited_payload, format="json")
+
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual(saved.json()["status"], Review.Status.DRAFT)
+        self.assertEqual(saved.json()["freeWriting"], "This reflection has changed.")
+        self.assertFalse(FeedbackReport.objects.filter(review_id=_parse_public_id(review["id"])).exists())
 
     def test_review_list_ordering_and_week_lookup_are_private(self):
         older = self.create_review(date(2025, 1, 6))
@@ -152,6 +166,45 @@ class JournalAPITests(TestCase):
         self.assertEqual(other_instance.get(f"/api/reviews/{review['id']}/report").json(), report)
         self.assertEqual(other_instance.get(f"/api/reviews/{review['id']}/commitment").json(), commitment)
 
+    def test_completion_discards_provider_result_when_review_changes_during_generation(self):
+        from backend.feedback.reports import generate_report_data as generate_from_snapshot
+
+        review = self.create_review()
+        model = Review.objects.get(pk=_parse_public_id(review["id"]))
+
+        def edit_during_provider_call(snapshot, history):
+            Review.objects.filter(pk=model.pk).update(
+                free_writing="Edited while the report was being generated.",
+                updated_at=model.updated_at + timedelta(seconds=1),
+            )
+            return generate_from_snapshot(snapshot, history)
+
+        with patch("backend.journal.views.generate_report_data", side_effect=edit_during_provider_call):
+            response = self.client.post(f"/api/reviews/{review['id']}/complete")
+
+        self.assertEqual(response.status_code, 409)
+        self.assertFalse(FeedbackReport.objects.filter(review=model).exists())
+        model.refresh_from_db()
+        self.assertEqual(model.free_writing, "Edited while the report was being generated.")
+        self.assertEqual(model.status, Review.Status.DRAFT)
+
+    def test_completion_returns_not_found_when_review_is_deleted_during_generation(self):
+        from backend.feedback.reports import generate_report_data as generate_from_snapshot
+
+        review = self.create_review()
+        model = Review.objects.get(pk=_parse_public_id(review["id"]))
+
+        def delete_during_provider_call(snapshot, history):
+            model.delete()
+            return generate_from_snapshot(snapshot, history)
+
+        with patch("backend.journal.views.generate_report_data", side_effect=delete_during_provider_call):
+            response = self.client.post(f"/api/reviews/{review['id']}/complete")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(Review.objects.filter(pk=model.pk).exists())
+        self.assertFalse(FeedbackReport.objects.filter(review_id=model.pk).exists())
+
     def test_report_insight_update_and_follow_up_suggestions_use_injected_provider(self):
         payload = review_payload(date(2025, 1, 6))
 
@@ -169,14 +222,26 @@ class JournalAPITests(TestCase):
         review = self.create_review(date(2025, 1, 6))
         report = self.client.post(f"/api/reviews/{review['id']}/complete").json()
         insight = report["takeaways"][0]
-        patched = self.client.patch(
-            f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
-            {"status": "accepted", "correction": "This reflects my week."},
-            format="json",
-        )
+        with CaptureQueriesContext(connection) as captured:
+            patched = self.client.patch(
+                f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
+                {"status": "accepted", "correction": "This reflects my week."},
+                format="json",
+            )
         self.assertEqual(patched.status_code, 200)
+        self.assertTrue(any("FOR UPDATE" in query["sql"].upper() for query in captured))
         self.assertEqual(patched.json()["takeaways"][0]["status"], "accepted")
         self.assertEqual(patched.json()["takeaways"][0]["correction"], "This reflects my week.")
+
+        strength = report["strengths"][0]
+        patched_strength = self.client.patch(
+            f"/api/reviews/{review['id']}/report/strengths/insights/{strength['id']}",
+            {"status": "rejected", "correction": "I want to revisit this next week."},
+            format="json",
+        )
+        self.assertEqual(patched_strength.status_code, 200)
+        self.assertEqual(patched_strength.json()["takeaways"][0]["status"], "accepted")
+        self.assertEqual(patched_strength.json()["strengths"][0]["status"], "rejected")
         self.assertEqual(self.client.patch(
             f"/api/reviews/{review['id']}/report/takeaways/insights/{insight['id']}",
             {},

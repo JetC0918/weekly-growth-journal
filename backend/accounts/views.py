@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from backend.config.telemetry import record_workflow_event
 
-from .serializers import CredentialsSerializer
+from .models import CanonicalUsernameIdentity
+from .serializers import CredentialsSerializer, RegistrationSerializer, canonical_username_digest
 from .tokens import create_access_token
 
 
@@ -18,13 +19,14 @@ class PublicAuthView(APIView):
 
 class RegisterView(PublicAuthView):
     def post(self, request):
-        serializer = CredentialsSerializer(data=request.data)
+        serializer = RegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         credentials = serializer.validated_data
-        username = credentials["username"].casefold()
+        username = credentials["username"]
         user_model = get_user_model()
 
-        if user_model.objects.filter(username__iexact=username).exists():
+        digest = canonical_username_digest(username)
+        if CanonicalUsernameIdentity.objects.filter(canonical_digest=digest).exists():
             return Response(
                 {"detail": "Username is already registered"},
                 status=status.HTTP_409_CONFLICT,
@@ -59,11 +61,15 @@ class LoginView(PublicAuthView):
         serializer = CredentialsSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         credentials = serializer.validated_data
-        user_model = get_user_model()
-        user = user_model.objects.filter(
-            username__iexact=credentials["username"].casefold(),
-            is_active=True,
-        ).first()
+        username = credentials["username"]
+        identity = (
+            CanonicalUsernameIdentity.objects.select_related("user")
+            .filter(canonical_digest=canonical_username_digest(username), user__is_active=True)
+            .first()
+        )
+        # The digest is an indexed lookup key; verify the full canonical value
+        # too, so even a theoretical digest collision fails closed.
+        user = identity.user if identity and identity.canonical_username == username else None
 
         if user is None or not user.check_password(credentials["password"]):
             record_workflow_event("account.login", "rejected")

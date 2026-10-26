@@ -98,13 +98,25 @@ class ReviewListCreateView(JournalView):
         created = existing is None
         try:
             with transaction.atomic():
-                if created:
-                    review = Review.objects.create(user=request.user, status=Review.Status.DRAFT, **payload)
-                else:
+                if existing is not None:
+                    locked_existing = Review.objects.select_for_update().filter(
+                        user=request.user,
+                        pk=existing.pk,
+                    ).first()
+                    if locked_existing is None:
+                        return Response({"detail": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+                    if FeedbackReport.objects.filter(review=locked_existing).exists():
+                        # Any edit invalidates the report generated from the
+                        # previous reflection snapshot.
+                        FeedbackReport.objects.filter(review=locked_existing).delete()
+                        locked_existing.status = Review.Status.DRAFT
                     for field, value in payload.items():
-                        setattr(existing, field, value)
-                    existing.save()
-                    review = existing
+                        setattr(locked_existing, field, value)
+                    locked_existing.save(update_fields=(*payload.keys(), "status", "updated_at"))
+                    review = locked_existing
+                    created = False
+                else:
+                    review = Review.objects.create(user=request.user, status=Review.Status.DRAFT, **payload)
         except IntegrityError:
             return _bad_request("A review already exists for this week")
         record_workflow_event("review.saved")
@@ -127,9 +139,12 @@ class ReviewDetailView(JournalView):
         return self.json_response(review, ReviewSerializer) if review else _null_response()
 
     def delete(self, request, review_id):
-        review = self.get_review(request, review_id)
-        if review:
-            review.delete()
+        parsed = _parse_id(review_id, "rev")
+        if parsed is not None:
+            with transaction.atomic():
+                review = Review.objects.select_for_update().filter(user=request.user, pk=parsed).first()
+                if review:
+                    review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -179,7 +194,27 @@ class CompleteReviewView(JournalView):
 
         try:
             with transaction.atomic():
-                locked_review = Review.objects.select_for_update().get(pk=review.pk, user=request.user)
+                locked_review = Review.objects.select_for_update().filter(
+                    pk=review.pk,
+                    user=request.user,
+                ).first()
+                if locked_review is None:
+                    record_workflow_event("review.completed", "deleted_during_generation")
+                    return Response({"detail": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+                snapshot_changed = (
+                    locked_review.updated_at != review.updated_at
+                    or locked_review.week_start != review.week_start
+                    or locked_review.answers != review.answers
+                    or locked_review.free_writing != review.free_writing
+                    or locked_review.follow_ups != review.follow_ups
+                    or locked_review.previous_action != review.previous_action
+                )
+                if snapshot_changed:
+                    record_workflow_event("review.completed", "changed_during_generation")
+                    return Response(
+                        {"detail": "Review changed while its report was being generated; please try again"},
+                        status=status.HTTP_409_CONFLICT,
+                    )
                 existing_report = FeedbackReport.objects.filter(review=locked_review).first()
                 report_data = merge_user_edits(existing_report, report_data)
                 report, _ = FeedbackReport.objects.update_or_create(
@@ -218,16 +253,19 @@ class InsightUpdateView(JournalView):
         if any(value is None for value in changes.values()):
             return _bad_request("Insight patch values cannot be null")
         review = self.get_review(request, review_id)
-        report = FeedbackReport.objects.filter(review=review).first() if review else None
-        if report is None:
+        if review is None:
             return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
-        insights = getattr(report, section)
-        match = next((item for item in insights if item.get("id") == insight_id), None)
-        if match is None:
-            return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
-        match.update(changes)
-        setattr(report, section, insights)
-        report.save(update_fields=(section,))
+        with transaction.atomic():
+            report = FeedbackReport.objects.select_for_update().filter(review=review).first()
+            if report is None:
+                return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
+            insights = getattr(report, section)
+            match = next((item for item in insights if item.get("id") == insight_id), None)
+            if match is None:
+                return Response({"detail": "Insight not found"}, status=status.HTTP_404_NOT_FOUND)
+            match.update(changes)
+            setattr(report, section, insights)
+            report.save(update_fields=(section,))
         record_workflow_event("insight.updated")
         return self.json_response(report, ReportSerializer)
 

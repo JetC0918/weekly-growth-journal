@@ -1,0 +1,441 @@
+{
+  "review_date": "2026-10-26",
+  "repository": "JetC0918/weekly-growth-journal",
+  "visibility": "private",
+  "base_revision": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+  "branches": [
+    {
+      "name": "codex/rubric-readiness",
+      "sha": "41b24b1aab60724f249decd20206bfe0365fe07e",
+      "protected": false
+    },
+    {
+      "name": "main",
+      "sha": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+      "protected": false
+    }
+  ],
+  "rulesets": [],
+  "open_pull_requests": [],
+  "runs": [
+    {
+      "id": 40280133581,
+      "name": "Deploy to Cloudflare",
+      "sha": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+      "status": "completed",
+      "conclusion": "skipped",
+      "url": "https://github.com/JetC0918/weekly-growth-journal/actions/runs/40280133581"
+    },
+    {
+      "id": 40280045096,
+      "name": "CI",
+      "sha": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/JetC0918/weekly-growth-journal/actions/runs/40280045096"
+    },
+    {
+      "id": 40278792155,
+      "name": "Deploy to Cloudflare",
+      "sha": "79db6bea4cc773150cd90002254b2f3ed5e055f3",
+      "status": "completed",
+      "conclusion": "skipped",
+      "url": "https://github.com/JetC0918/weekly-growth-journal/actions/runs/40278792155"
+    },
+    {
+      "id": 40278700454,
+      "name": "CI",
+      "sha": "79db6bea4cc773150cd90002254b2f3ed5e055f3",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/JetC0918/weekly-growth-journal/actions/runs/40278700454"
+    },
+    {
+      "id": 40277772369,
+      "name": "CI",
+      "sha": "41b24b1aab60724f249decd20206bfe0365fe07e",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/JetC0918/weekly-growth-journal/actions/runs/40277772369"
+    }
+  ],
+  "audit_jobs": [
+    {
+      "id": 121431134687,
+      "name": "Django and PostgreSQL API integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40280045096,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Initialize containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run uv sync --locked",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run uv run python backend/manage.py test --tag=integration",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Stop containers",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 121431134855,
+      "name": "Frontend tests, lint, and build",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40280045096,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run oven-sh/setup-bun@v2.2.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run bun install --frozen-lockfile",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run bun run test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run bun run lint",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run bun run build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Post Run oven-sh/setup-bun@v2.2.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        }
+      ]
+    },
+    {
+      "id": 121431134884,
+      "name": "Compose configuration and image builds",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40280045096,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run docker compose config -q",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run docker compose build",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        }
+      ]
+    },
+    {
+      "id": 121431134892,
+      "name": "Django tests (excluding integration)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40280045096,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run uv sync --locked",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run uv run python backend/manage.py check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run uv run python backend/manage.py test --exclude-tag=integration",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        }
+      ]
+    },
+    {
+      "id": 121431134987,
+      "name": "Dependency and tracked-content audit",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40280045096,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run oven-sh/setup-bun@v2.2.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run uv sync --locked --all-extras",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Scan Python dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Scan frontend dependencies",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Check tracked content for likely secrets",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Upload dependency scan results",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Run oven-sh/setup-bun@v2.2.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Post Run astral-sh/setup-uv@v10.3.2",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        }
+      ]
+    }
+  ],
+  "artifact": [
+    {
+      "id": 12631857585,
+      "name": "dependency-audit-40280045096",
+      "size_in_bytes": 2946,
+      "url": "https://api.github.com/repos/JetC0918/weekly-growth-journal/actions/artifacts/12631857585",
+      "archive_download_url": "https://api.github.com/repos/JetC0918/weekly-growth-journal/actions/artifacts/12631857585/zip",
+      "expired": false,
+      "created_at": "2026-10-26T06:29:10Z",
+      "expires_at": "2027-01-24T06:28:45Z",
+      "updated_at": "2026-10-26T06:29:10Z",
+      "digest": "sha256:07184e0bcfc36300f35b3e5e946e37b53a810273c6500c1f8a69023d735979f3",
+      "workflow_run": {
+        "id": 40280045096,
+        "repository_id": 1433131794,
+        "head_repository_id": 1433131794,
+        "head_branch": "main",
+        "head_sha": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f"
+      }
+    }
+  ],
+  "security_settings": {
+    "dependabot_alerts": "disabled: GitHub REST HTTP403 explicit message",
+    "code_scanning": "not enabled: GitHub REST HTTP403 explicit message",
+    "secret_scanning": "disabled: GitHub REST HTTP404 explicit message",
+    "branch_protection": "not protected: GitHub REST HTTP404 explicit message",
+    "environment": {
+      "name": "cloudflare-production",
+      "required_reviewers": false,
+      "protection_rules": [
+        "branch_policy"
+      ],
+      "allowed_branches": [
+        "main"
+      ]
+    },
+    "repository_deploy_enabled_variable": "not present in gh variable list",
+    "limitations": "Secret values, collaborators, organization policies, cloud/edge controls and deployed services not inspected."
+  }
+}

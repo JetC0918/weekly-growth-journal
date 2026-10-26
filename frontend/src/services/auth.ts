@@ -27,7 +27,8 @@ export interface AuthService {
   refreshSession(): void;
   subscribe(listener: () => void): () => void;
   getAccessToken(): string | null;
-  handleUnauthorized(): void;
+  getSessionGeneration(): number;
+  handleUnauthorized(expectedGeneration?: number): void;
 }
 
 interface AuthResponse {
@@ -41,7 +42,7 @@ interface AuthServiceOptions {
   now?: () => number;
 }
 
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
+const configuredBaseUrl = import.meta.env["VITE_API_BASE_URL"] || "/api";
 
 const signedOutSnapshot = (): AccountSessionSnapshot => ({
   isAuthenticated: false,
@@ -59,6 +60,7 @@ export function createAuthService({
   const authUrl = (path: string) => `${baseUrl.replace(/\/+$/, "")}/auth/${path}`;
   let snapshot = signedOutSnapshot();
   let accessToken: string | null = null;
+  let sessionGeneration = 0;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
   const listeners = new Set<() => void>();
 
@@ -75,6 +77,7 @@ export function createAuthService({
   };
 
   const expireSession = () => {
+    sessionGeneration += 1;
     clearTimer();
     accessToken = null;
     publish({
@@ -87,6 +90,7 @@ export function createAuthService({
 
   const expireIfNeeded = () => {
     if (snapshot.isAuthenticated && snapshot.expiresAt !== null && now() >= snapshot.expiresAt) {
+      sessionGeneration += 1;
       clearTimer();
       accessToken = null;
       publish({
@@ -99,6 +103,7 @@ export function createAuthService({
   };
 
   const authenticate = async (path: string, credentials: AuthCredentials) => {
+    const requestGeneration = ++sessionGeneration;
     const requestStartedAt = now();
     let response: Response;
     try {
@@ -122,6 +127,8 @@ export function createAuthService({
       throw new AuthRequestError(0);
     }
 
+    if (sessionGeneration !== requestGeneration) throw new AuthRequestError(0);
+
     clearTimer();
     accessToken = result.accessToken;
     const expiresAt = requestStartedAt + SESSION_LIFETIME_MS;
@@ -134,6 +141,7 @@ export function createAuthService({
     register: (credentials) => authenticate(authUrl("register"), credentials),
     login: (credentials) => authenticate(authUrl("login"), credentials),
     signOut: () => {
+      sessionGeneration += 1;
       clearTimer();
       accessToken = null;
       publish(signedOutSnapshot());
@@ -152,6 +160,10 @@ export function createAuthService({
       expireIfNeeded();
       return accessToken;
     },
-    handleUnauthorized: expireSession,
+    getSessionGeneration: () => sessionGeneration,
+    handleUnauthorized: (expectedGeneration) => {
+      if (expectedGeneration !== undefined && expectedGeneration !== sessionGeneration) return;
+      expireSession();
+    },
   };
 }

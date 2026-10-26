@@ -2,7 +2,10 @@ import type { GrowthService } from "./api";
 import type { AuthService } from "./auth";
 import type { Commitment, Report, Review, SaveReviewInput } from "./types";
 
-type RequestAuth = Pick<AuthService, "getAccessToken" | "handleUnauthorized">;
+type RequestAuth = Pick<
+  AuthService,
+  "getAccessToken" | "getSessionGeneration" | "handleUnauthorized"
+>;
 
 export interface HttpServiceOptions {
   baseUrl?: string;
@@ -19,7 +22,7 @@ export class ApiError extends Error {
   }
 }
 
-const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api";
+const configuredBaseUrl = import.meta.env["VITE_API_BASE_URL"] || "/api";
 
 function joinUrl(baseUrl: string, path: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
@@ -46,7 +49,8 @@ export function createHttpService(
     const headers: Record<string, string> = { Accept: "application/json" };
     if (body !== undefined) headers["Content-Type"] = "application/json";
     const token = auth.getAccessToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
+    const sessionGeneration = auth.getSessionGeneration();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
     let response: Response;
     try {
@@ -62,7 +66,15 @@ export function createHttpService(
       );
     }
 
-    if (response.status === 401) auth.handleUnauthorized();
+    const isCurrentSession = () => auth.getSessionGeneration() === sessionGeneration;
+    if (!isCurrentSession()) {
+      throw new ApiError(
+        0,
+        "The session changed while the request was in progress. Please try again.",
+      );
+    }
+
+    if (response.status === 401) auth.handleUnauthorized(sessionGeneration);
     if (!response.ok) {
       let detail: string | null = null;
       try {
@@ -77,11 +89,19 @@ export function createHttpService(
     }
 
     if (response.status === 204) return undefined as T;
+    let result: T;
     try {
-      return (await response.json()) as T;
+      result = (await response.json()) as T;
     } catch {
       throw new ApiError(response.status, "The journal service returned an invalid response.");
     }
+    if (!isCurrentSession()) {
+      throw new ApiError(
+        0,
+        "The session changed while the request was in progress. Please try again.",
+      );
+    }
+    return result;
   };
 
   return {

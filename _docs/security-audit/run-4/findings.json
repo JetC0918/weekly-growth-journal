@@ -1,0 +1,10 @@
+[
+  {
+    "verdict": "rejected",
+    "reason": "Claimed cross-account report disclosure through stale browser response/cache writes was not demonstrated. Ordinary QueryClient.clear cancels old queries; explicit delayed mutation callbacks can restore only a report cache entry (frontend/src/routes/report.$reviewId.tsx:65–66). The report loader (:32–38) fetches the review and optional commitment but requires a non-null owned review and report, backend/journal/views.py:68 scopes the lookup, and real wrong-owner GET returns null200 (:52–53,124–127). The loader's null check throws notFound and the component (:61) requires review+report, preventing display. Independent query/router/null-guard checks confirmed the mitigation. Stale401 can expire the current session but no remotely exploitable credential/data compromise was established; retain session-generation hardening."
+  },
+  {
+    "verdict": "rejected",
+    "reason": "Claimed victim account takeover or victim login denial through username representation was disproved in independent synthetic API checks. Raw numeric usernames can bypass password-similarity comparison (backend/accounts/serializers.py:40–43), and casefold-before-Django-NFKC creates audituser/Audituser collisions (views.py:24,35). Login (:63–68) still checks the older matched account's password. The original victim retained normal login and data; new registration bearer had a distinct subject and no victim reviews (tokens.py:21; authentication.py:28). Retain canonicalization/password-policy/self-account-login behavior as hardening/reliability, not a victim compromise."
+  }
+]

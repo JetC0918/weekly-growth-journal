@@ -6,10 +6,6 @@ OpenAI-compatible adapter for optional follow-up questions. The adapter makes
 no provider request while its configuration is incomplete; the checked-in
 configuration leaves `AI_API_KEY` blank.
 
-The FastAPI code under `backend/app/` is a transitional prototype. It is not the
-documented backend launch path and does not provide the Django persistence
-architecture.
-
 ## Local setup
 
 For the complete local app, use Docker Compose from the repository root:
@@ -105,7 +101,3 @@ uv run python backend/manage.py test
 
 `GET /api/health/` returns `{"status":"ok"}` without authentication. Account
 and journal endpoints require the documented bearer token.
-
-The older FastAPI tests can still be run separately with `uv sync --extra test`
-and `uv run pytest` from the repository root. They exercise transitional code,
-not the Django API.

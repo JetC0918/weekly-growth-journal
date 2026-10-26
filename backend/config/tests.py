@@ -1,7 +1,11 @@
-from django.core.checks import Error
+from unittest.mock import patch
+
+from django.core.checks import Error, Warning
+from django.core.management.base import SystemCheckError
 from django.test import Client, SimpleTestCase, override_settings
 
 from .checks import check_production_configuration
+from .startup import get_checked_application
 
 
 class ProductionConfigurationCheckTests(SimpleTestCase):
@@ -30,7 +34,10 @@ class ProductionConfigurationCheckTests(SimpleTestCase):
 
     def check(self, **overrides) -> list[Error]:
         settings = {**self.valid_production_settings, **overrides}
-        with override_settings(**settings):
+        database = settings.pop("DATABASES")
+        with override_settings(**settings), patch(
+            "backend.config.checks.settings.DATABASES", database
+        ):
             return check_production_configuration(None)
 
     def test_complete_production_configuration_passes(self):
@@ -152,6 +159,51 @@ class ProductionConfigurationCheckTests(SimpleTestCase):
     def test_production_rejects_fake_provider_mode(self):
         errors = self.check(AI_PROVIDER_MODE="fake")
         self.assertIn("config.E015", {error.id for error in errors})
+
+
+class ProductionStartupGateTests(SimpleTestCase):
+    def test_development_startup_skips_deployment_checks(self):
+        application = object()
+        with override_settings(APP_ENV="development"), patch(
+            "backend.config.startup.run_checks"
+        ) as run_checks:
+            result = get_checked_application(lambda: application)
+
+        self.assertIs(result, application)
+        run_checks.assert_not_called()
+
+    def test_production_startup_raises_before_returning_application_on_errors(self):
+        application = object()
+        errors = [Error("Production signing keys are invalid.", id="config.E003")]
+        with override_settings(APP_ENV="production"), patch(
+            "backend.config.startup.run_checks", return_value=errors
+        ) as run_checks:
+            with self.assertRaises(SystemCheckError) as raised:
+                get_checked_application(lambda: application)
+
+        run_checks.assert_called_once_with(include_deployment_checks=True)
+        self.assertIn("config.E003", str(raised.exception))
+
+    def test_production_startup_reports_but_does_not_block_on_warnings(self):
+        application = object()
+        warnings = [Warning("Set HSTS after confirming HTTPS delivery.", id="security.W004")]
+        with override_settings(APP_ENV="production"), patch(
+            "backend.config.startup.run_checks", return_value=warnings
+        ):
+            result = get_checked_application(lambda: application)
+
+        self.assertIs(result, application)
+
+    def test_unknown_environment_fails_closed(self):
+        application = object()
+        errors = [Error("APP_ENV must be set to either development or production.", id="config.E001")]
+        with override_settings(APP_ENV="staging"), patch(
+            "backend.config.startup.run_checks", return_value=errors
+        ) as run_checks:
+            with self.assertRaises(SystemCheckError):
+                get_checked_application(lambda: application)
+
+        run_checks.assert_called_once_with(include_deployment_checks=True)
 
 
 class CorsHeaderTests(SimpleTestCase):

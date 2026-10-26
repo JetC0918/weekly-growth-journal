@@ -50,6 +50,20 @@ application relies on PostgreSQL behavior and transactions.
    critical journey, and record the revision and outcome. Keep rollback
    instructions beside the release record.
 
+### Account identity migration prerequisite
+
+The account authentication hardening adds
+`backend.accounts.0001_canonical_username_identity`. It builds a unique,
+indexed canonical username key without renaming or deleting accounts. The
+backfill stops before inserting identities if existing accounts normalize to
+the same key; reconcile those accounts manually while preserving their journal
+data, then rerun the migration. The deployment workflow does not apply database
+migrations. Run this migration in a controlled staging/release step with old
+registration writes quiesced across the backfill and application cutover, then
+verify every account has an identity row before enabling registration. Do not
+turn on production deployment until the actual Worker/database migration and
+rollback behavior have been verified.
+
 ## Release evidence to record
 
 For each release, record the commit/revision, build artifact digest, environment,

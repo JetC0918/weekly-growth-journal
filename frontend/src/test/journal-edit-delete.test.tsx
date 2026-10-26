@@ -78,7 +78,12 @@ function mockReviews(initialReviews: Review[]) {
         (review) => (input.id && review.id === input.id) || review.weekStart === input.weekStart,
       );
       if (existing) {
-        const updated = { ...existing, ...input, updatedAt: "2025-01-14T10:00:00Z" };
+        const updated = {
+          ...existing,
+          ...input,
+          id: existing.id,
+          updatedAt: "2025-01-14T10:00:00Z",
+        };
         reviews = reviews.map((review) => (review.id === existing.id ? updated : review));
         return updated;
       }

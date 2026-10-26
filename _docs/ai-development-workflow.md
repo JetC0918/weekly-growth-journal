@@ -323,3 +323,102 @@ deployed and checked.
 - **Automation:** No CI or deployment workflow was triggered by this task.
 - **Outcome:** Documentation update complete; live deployment remains
   unverified.
+
+### 2026-10-26 — Spring cleanup and predeployment security audit
+
+- **Task/prompt (summary):** User requested removing unnecessary files and a
+  thorough security-audit skill review of the whole local repository and GitHub
+  before deployment. No issue was supplied; no deployment was authorized.
+- **Baseline/scope:** Clean tree at `b7c0ae9`, matching remote main. Audit output
+  follows the existing `_docs/security-audit/run-3/` convention. Previous two
+  source reviews were read, with their historical evidence kept intact.
+- **Acceptance criteria:** Remove only demonstrably obsolete/generated content;
+  preserve supported behavior; map all trust/input surfaces; validate concrete
+  security claims independently; inspect actual GitHub controls/scan evidence;
+  deliver reconciled prose and schema-valid JSON; run appropriate checks and
+  commit locally. No dependency additions/upgrades or external writes.
+- **Plan/handoffs:** PM/recon, three hunters, an independent candidate validator,
+  cleanup engineer and independent QA supplied bounded results. Audit agents
+  wrote no files. Primary assembled artifacts and fetched/ran evidence checks,
+  a documented deviation from pure orchestration to honor the audit skill's
+  artifact-ownership rule. This record was assembled after verification; the
+  conversation retains intake/handoff timing. Human review is not recorded.
+- **AI work:** Retired FastAPI prototype/compatibility tests, removed unreachable
+  frontend controls/hook, pruned 14 unused Python lock entries, updated current
+  docs and cleared generated caches. Cleanup commit: `f56a513`. Preserved active
+  tests/mocks, Uvicorn, migrations, historical evidence and frontend lockfile.
+- **Verification:** 29 Django unit tests and 32 frontend tests passed; lint had
+  zero errors/two existing warnings; production frontend build and lock check
+  passed. Independent synthetic SQLite run passed 61 tests; PostgreSQL-only
+  journey excluded. Initial audit harness attempt had four harness-related
+  failures, corrected without changing product/tests. Fresh root/Cloudflare
+  Python scans reported no known vulnerabilities. Historical blob-pattern scan
+  checked 21 reachable commits/273 blobs, no matches. Full evidence/limitations
+  are in [run 3 verification](security-audit/run-3/evidence/verification.md).
+- **Security review:** No confirmed application exploit survived validation.
+  Startup checks, advisory/release gates and GitHub protections remain release
+  concerns. Actual hosted frontend scan has 25 advisory entries across nine
+  package names/18 advisory URLs, including one critical database rating; no
+  application RCE claim is made from that count. Main unprotected, scanners
+  disabled, deployment skipped. Two rejected claims and the prose were
+  independently checked; findings schema validation passed.
+- **Tools/access:** FastCtx file inspection; explicit-workdir built-in commands
+  because FastCtx shell did not reach this repository; GitHub connector and
+  read-only CLI fallback for unsupported settings. Docker named-pipe access
+  failed, so no fresh PostgreSQL/container/deployed test. One hunter's final
+  turn was service-blocked; no blocked action is claimed as executed.
+- **Outcome:** Scoped cleanup/report QA PASS. [Report](security-audit/run-3/REPORT.md)
+  recommends holding deployment until listed release gates and actual staging
+  checks pass. No push, PR, external post, GitHub setting change or deployment.
+
+### 2026-10-26 — Apply run-4 security hardening
+
+- **Task/prompt (summary):** User asked to harden the repository based on the
+  fresh predeployment audit before going live.
+- **Baseline/scope:** Started from local audit commit `02910d4` on
+  `codex/predeployment-audit-cleanup`. Scope covered canonical account names,
+  stale browser responses, report generation races, and deploy smoke checks.
+  GitHub settings, Cloudflare secrets/variables, and deployment were out of
+  scope; the production deployment switch remains off.
+- **Acceptance criteria:** Use one NFKC/casefold/NFKC username key for password
+  similarity, registration, and login; reject ambiguous legacy keys without
+  renaming or deleting accounts; avoid full user-table scans on public auth
+  requests; prevent older session responses from affecting newer sessions;
+  refuse report persistence if the review changed or disappeared during
+  generation; reject placeholder deployments using contract checks.
+- **Plan/handoffs:** PM scope returned these criteria and deferred staging and
+  account-level launch gates. Engineer owned account/journal fixes; another
+  engineer owned frontend session handling. Independent QA found and returned
+  the initial public O(n) account scan and a rename-collision edge case. The
+  engineer replaced the scans with an indexed canonical identity table, added a
+  fail-closed collision migration, restored usernames after caught rename
+  conflicts, and added regressions. Independent QA rechecked the corrections.
+- **AI work:** Added session-generation checks to discard stale API responses
+  and old 401s. Report completion now compares the locked review against its
+  provider input snapshot and returns 409 or 404 when it changed or was deleted;
+  review edits invalidate old reports; concurrent insight edits lock their
+  owned report row during JSON read-modify-save. Deploy smoke parses the health
+  JSON, requires unauthenticated journal access to return 401, and checks for
+  the branded React root and a built JavaScript asset. No dependencies added.
+- **AI review:** Final source QA passed by inspection after corrective iterations.
+  The migration must be applied before the new app code; legacy registration
+  must be quiesced around migration/backfill. QuerySet bulk updates, raw fixture
+  loads, and an authenticated staging journey remain operational considerations.
+  The [Cloudflare runbook](cloudflare-deployment.md) records the migration gate.
+  No human review is recorded.
+- **Verification:** `uv run python backend/manage.py makemigrations --check
+  --dry-run` reported no model changes; `uv run python
+  backend/manage.py test backend.accounts backend.journal --keepdb` passed 29
+  tests with no Django system-check issues. Frontend Vitest passed 35 tests,
+  TypeScript checking passed, ESLint exited 0 with two existing Fast Refresh
+  warnings, and the production Vite build passed. Workflow YAML parsed and
+  `git diff --check` passed. Local `vite preview` did not start because the
+  existing preview plugin expected `frontend/dist/server/server.js`; the
+  production build itself succeeded. No authenticated deployed smoke or actual
+  Worker/Hyperdrive journey was run.
+- **Outcome:** Source hardening is complete locally. Launch remains on hold
+  until the new identity migration is staged/applied with registration writes
+  quiesced, origin variables/CORS are corrected, a synthetic authenticated
+  journal journey passes against the real Worker/database, and the remaining
+  report gates are verified. No push, PR, GitHub setting change, secret access,
+  or deployment was performed.

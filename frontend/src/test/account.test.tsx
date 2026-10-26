@@ -134,6 +134,21 @@ describe("account access", () => {
     expect(auth.getSnapshot().notice).toBe("Your session expired. Sign in again to continue.");
   });
 
+  it("ignores an unauthorized response tagged with an older session generation", async () => {
+    const auth = createAuthService({ fetcher: vi.fn().mockResolvedValue(tokenResponse()) });
+    await auth.login({ username: "first-reader", password: "long-enough-password" });
+    const firstGeneration = auth.getSessionGeneration();
+    auth.signOut();
+    await auth.login({ username: "second-reader", password: "long-enough-password" });
+    const secondGeneration = auth.getSessionGeneration();
+
+    auth.handleUnauthorized(firstGeneration);
+
+    expect(secondGeneration).toBeGreaterThan(firstGeneration);
+    expect(auth.getAccessToken()).toBe("signed-token");
+    expect(auth.getSnapshot()).toMatchObject({ isAuthenticated: true, username: "second-reader" });
+  });
+
   it("shows the expiration sign-in notice after a shared unauthorized action", async () => {
     vi.mocked(fetch).mockResolvedValue(tokenResponse());
     render(<AccountScreen />);

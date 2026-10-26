@@ -1,0 +1,8 @@
+{
+  "base_revision": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+  "reachable_commits": 21,
+  "unique_blobs_checked": 273,
+  "binary_blobs_skipped": 1,
+  "matches": [],
+  "limitations": "High-confidence repository guard patterns only; no entropy scanner, unreachable objects, remote-only refs, LFS payloads or binary secrets. No secret values emitted."
+}

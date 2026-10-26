@@ -2,7 +2,7 @@
 
 **Status:** Current repository architecture, with planned deployment work labeled separately.
 
-This describes source inspected on 2026-10-26, including the Cloudflare proof-of-concept files now present in the repository. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service and an earlier FastAPI prototype. Cloudflare configuration and a gated deployment workflow now exist in the working tree, but no live deployment or Cloudflare runtime verification has been reported.
+This describes source inspected on 2026-10-26, including the Cloudflare proof-of-concept files now present in the repository. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service for isolated frontend tests. Cloudflare configuration and a gated deployment workflow now exist in the working tree, but no live deployment or Cloudflare runtime verification has been reported.
 
 ## Implemented components
 
@@ -51,7 +51,6 @@ Test files are present; their presence does not show that they were run or passe
 
 - Frontend Vitest/jsdom tests cover [HTTP request mapping and errors](../frontend/src/services/httpService.test.ts), [active HTTP wiring](../frontend/src/test/service-wiring.test.ts), mock service behavior, week/date rules, account flows, routing, session cache, and journal edit/delete flows. They use mocks rather than a live browser-to-Django stack.
 - Django tests cover [accounts and health](../backend/accounts/tests.py), [configuration/CORS](../backend/config/tests.py), [journal persistence, isolation, deletion, and a deterministic two-week journey](../backend/journal/tests.py), and [provider validation/failure/rollback behavior](../backend/feedback/tests.py). Database tests use Django's PostgreSQL test database; provider tests inject fakes or mock transport. The two-week journey uses an API client, not a browser.
-- Pytest [API compatibility](../backend/tests/test_api.py) and [OpenAPI smoke](../backend/tests/test_smoke.py) tests exercise only the transitional FastAPI app with its process-local store. Django health coverage belongs to the Django suite.
 
 Commands and database prerequisites are listed in [`AGENTS.md`](../AGENTS.md) and [`README.md`](../README.md). No test result is claimed here; check the task's workflow record for verification performed on a particular change.
 
@@ -69,9 +68,9 @@ The newer QA update supplied no run URL/ID, exact revision, or test environment;
 
 These reports do not establish Cloudflare compatibility or a live deployment. See the dated evidence in [`ai-development-workflow.md`](ai-development-workflow.md).
 
-## Transitional code and planned deployment
+## Test doubles and planned deployment
 
-The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. The earlier FastAPI app under [`backend/app/`](../backend/app/) uses a seeded process-local store. It is transitional, and FastAPI/Uvicorn dependencies remain in [`pyproject.toml`](../pyproject.toml). Django under `backend/config/` is the documented API launch path and uses PostgreSQL; the legacy store is not its persistence layer.
+The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. Django under `backend/config/` is the API launch path and uses PostgreSQL. Uvicorn remains a runtime dependency because the backend container uses it to serve Django's ASGI application.
 
 Cloudflare Workers for the frontend/API and a managed PostgreSQL connection through Hyperdrive are a **configured proof of concept, still unverified at runtime**. The repository contains `frontend/wrangler.jsonc`, an isolated adapter at `backend/cloudflare/src/worker.py`, its Hyperdrive binding in `backend/cloudflare/wrangler.toml`, and the conditional deployment workflow. The workflow requires successful CI on `main`, `CLOUDFLARE_DEPLOY_ENABLED=true`, and account-specific secrets/variables before deployment. It performs HTTP checks of the API health route and frontend root after deployment. No Cloudflare account credentials were available or used for this work; the workflow has not run and no live Worker, managed database, deployed smoke check, or real journal journey is verified. Python Worker package/driver compatibility, PostgreSQL transactions and locking, and Hyperdrive TLS behavior remain proof-of-concept gates. See `_docs/cicd.md` for configuration requirements and release checks.
 
