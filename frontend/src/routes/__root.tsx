@@ -175,6 +175,13 @@ function RootComponent() {
             </Link>
           </nav>
         </header>
+        {session.isAuthenticated && services.auth.isDemo() && (
+          <div className="mx-auto max-w-3xl px-5 pb-4">
+            <p role="status" className="rounded-lg border bg-secondary px-4 py-3 text-sm">
+              Demo mode: sample data and edits stay in this browser.
+            </p>
+          </div>
+        )}
         <main className="mx-auto max-w-3xl px-5 pb-20">
           <Outlet />
         </main>

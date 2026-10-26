@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/account")({
       { name: "description", content: "Create an account or sign in to Weekly." },
     ],
   }),
-  component: AccountScreen,
+  component: AccountRoute,
 });
 
 type AccessMode = "register" | "login";
@@ -37,7 +37,12 @@ export function accountErrorMessage(error: unknown, mode: AccessMode): string {
   return "We couldn't complete that request. Please try again in a moment.";
 }
 
-export function AccountScreen() {
+function AccountRoute() {
+  const navigate = useNavigate();
+  return <AccountScreen onDemoEntered={() => void navigate({ to: "/" })} />;
+}
+
+export function AccountScreen({ onDemoEntered }: { onDemoEntered?: () => void } = {}) {
   const session = useSyncExternalStore(
     services.auth.subscribe,
     services.auth.getSnapshot,
@@ -86,7 +91,9 @@ export function AccountScreen() {
           <CardHeader>
             <h2 className="font-serif text-2xl font-semibold">You're signed in</h2>
             <CardDescription>
-              Your account is ready for a private reflection session.
+              {services.auth.isDemo()
+                ? "You're exploring a browser-local demo account with sample journal history."
+                : "Your account is ready for a private reflection session."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -187,6 +194,29 @@ export function AccountScreen() {
                 {isRegistering ? "Sign in" : "Create an account"}
               </Button>
             </div>
+
+            {!isRegistering && (
+              <div className="mt-5 space-y-3 rounded-lg border bg-secondary/50 p-4">
+                <div>
+                  <h3 className="font-medium text-foreground">Look around first</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    The demo includes three past reviews and sample feedback. Any changes stay in
+                    this browser.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    services.auth.enterDemo();
+                    onDemoEntered?.();
+                  }}
+                >
+                  Explore the demo account
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

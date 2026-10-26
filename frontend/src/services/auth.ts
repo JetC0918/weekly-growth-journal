@@ -22,6 +22,8 @@ export class AuthRequestError extends Error {
 export interface AuthService {
   register(credentials: AuthCredentials): Promise<AccountSessionSnapshot>;
   login(credentials: AuthCredentials): Promise<AccountSessionSnapshot>;
+  enterDemo(): AccountSessionSnapshot;
+  isDemo(): boolean;
   signOut(): void;
   getSnapshot(): AccountSessionSnapshot;
   refreshSession(): void;
@@ -60,6 +62,7 @@ export function createAuthService({
   const authUrl = (path: string) => `${baseUrl.replace(/\/+$/, "")}/auth/${path}`;
   let snapshot = signedOutSnapshot();
   let accessToken: string | null = null;
+  let demoSession = false;
   let sessionGeneration = 0;
   let expiryTimer: ReturnType<typeof setTimeout> | undefined;
   const listeners = new Set<() => void>();
@@ -80,6 +83,7 @@ export function createAuthService({
     sessionGeneration += 1;
     clearTimer();
     accessToken = null;
+    demoSession = false;
     publish({
       isAuthenticated: false,
       username: null,
@@ -93,6 +97,7 @@ export function createAuthService({
       sessionGeneration += 1;
       clearTimer();
       accessToken = null;
+      demoSession = false;
       publish({
         isAuthenticated: false,
         username: null,
@@ -130,6 +135,7 @@ export function createAuthService({
     if (sessionGeneration !== requestGeneration) throw new AuthRequestError(0);
 
     clearTimer();
+    demoSession = false;
     accessToken = result.accessToken;
     const expiresAt = requestStartedAt + SESSION_LIFETIME_MS;
     publish({ isAuthenticated: true, username: credentials.username, expiresAt, notice: null });
@@ -140,10 +146,22 @@ export function createAuthService({
   return {
     register: (credentials) => authenticate(authUrl("register"), credentials),
     login: (credentials) => authenticate(authUrl("login"), credentials),
+    enterDemo: () => {
+      sessionGeneration += 1;
+      clearTimer();
+      accessToken = null;
+      demoSession = true;
+      const expiresAt = now() + SESSION_LIFETIME_MS;
+      publish({ isAuthenticated: true, username: "demo", expiresAt, notice: null });
+      expiryTimer = setTimeout(expireSession, Math.max(0, expiresAt - now()));
+      return snapshot;
+    },
+    isDemo: () => demoSession,
     signOut: () => {
       sessionGeneration += 1;
       clearTimer();
       accessToken = null;
+      demoSession = false;
       publish(signedOutSnapshot());
     },
     getSnapshot: () => {

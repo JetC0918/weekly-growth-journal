@@ -23,7 +23,7 @@ interface DB {
   commitments: Commitment[];
 }
 
-const KEY = "growth-tool:v1";
+export const MOCK_SERVICE_STORAGE_KEY = "growth-tool:v1";
 let n = 0;
 const uid = (p: string) => `${p}_${Date.now().toString(36)}_${(n++).toString(36)}`;
 
@@ -34,10 +34,10 @@ export function createMockService(
   const wait = () =>
     opts.latencyMs ? new Promise((r) => setTimeout(r, opts.latencyMs)) : Promise.resolve();
   const load = (): DB => {
-    const raw = store.getItem(KEY);
+    const raw = store.getItem(MOCK_SERVICE_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as DB) : { reviews: [], reports: [], commitments: [] };
   };
-  const save = (db: DB) => store.setItem(KEY, JSON.stringify(db));
+  const save = (db: DB) => store.setItem(MOCK_SERVICE_STORAGE_KEY, JSON.stringify(db));
   const clone = <T>(x: T): T => structuredClone(x);
   const byWeekDesc = (a: Review, b: Review) => b.weekStart.localeCompare(a.weekStart);
 
@@ -168,7 +168,7 @@ export function createMockService(
     },
     async deleteAllData() {
       await wait();
-      store.removeItem(KEY);
+      store.removeItem(MOCK_SERVICE_STORAGE_KEY);
     },
   };
 }

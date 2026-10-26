@@ -38,8 +38,12 @@ automation are described in [`_docs/cicd.md`](_docs/cicd.md).
 - **Frontend:** [weekly-growth-journal-frontend.onrender.com](https://weekly-growth-journal-frontend.onrender.com/)
 - **API health:** [weekly-growth-journal-api.onrender.com/api/health/](https://weekly-growth-journal-api.onrender.com/api/health/)
 
-The frontend opens at account access. Create an account and use synthetic,
-non-sensitive journal entries to explore the app. The API health endpoint
+The frontend opens at account access. Choose **Explore the demo account** to
+open a browser-local sample account with three past weekly reviews, sample
+feedback reports, and commitments. Demo data is separate from production
+accounts; edits are saved only in that browser and can be erased from History.
+You can also create your own account and use synthetic, non-sensitive entries.
+The API health endpoint
 currently reports HTTP availability; it does not verify database readiness or
 prove a complete account-to-journal workflow. See the [Render deployment
 guide](_docs/render-deployment.md) for deployment details and free-tier limits.
