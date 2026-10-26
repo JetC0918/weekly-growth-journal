@@ -133,31 +133,33 @@ function createSeededDemoService(): GrowthService {
     if (initialization) return initialization;
 
     initialization = (async () => {
-      const reviews = sampleReviews();
+      const [oldest, middle, newest] = sampleReviews();
+      if (!oldest || !middle || !newest) throw new Error("Demo review seed is incomplete.");
+      const reviews = [oldest, middle, newest];
       const commitments = [
         {
           id: "demo-commitment-three-weeks-ago",
-          reviewId: reviews[0].id,
-          weekStart: reviews[0].weekStart,
+          reviewId: oldest.id,
+          weekStart: oldest.weekStart,
           text: "Study for ten minutes before dinner.",
           measure: "Three short sessions",
-          createdAt: reviews[0].createdAt,
+          createdAt: oldest.createdAt,
         },
         {
           id: "demo-commitment-two-weeks-ago",
-          reviewId: reviews[1].id,
-          weekStart: reviews[1].weekStart,
+          reviewId: middle.id,
+          weekStart: middle.weekStart,
           text: "Move a missed session to the next open evening.",
           measure: "Write down the backup time",
-          createdAt: reviews[1].createdAt,
+          createdAt: middle.createdAt,
         },
         {
           id: "demo-commitment-last-week",
-          reviewId: reviews[2].id,
-          weekStart: reviews[2].weekStart,
+          reviewId: newest.id,
+          weekStart: newest.weekStart,
           text: "Put my notes on the desk before finishing work.",
           measure: "Ready before Monday evening",
-          createdAt: reviews[2].createdAt,
+          createdAt: newest.createdAt,
         },
       ];
       store.setItem(
