@@ -122,6 +122,10 @@ jobs:
       - name: Install isolated Python Worker dependencies
         run: uv sync --locked --project backend/cloudflare
 
+      - name: Sync Python Worker packages
+        working-directory: backend/cloudflare
+        run: uv run --locked --project . pywrangler sync
+
       - name: Package the canonical Django application
         run: uv run --locked --project backend/cloudflare python backend/cloudflare/scripts/package_backend.py
 
