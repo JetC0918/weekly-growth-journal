@@ -1,5 +1,6 @@
 """Fail-closed deployment checks for production configuration."""
 
+import os
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
@@ -98,7 +99,20 @@ def check_production_configuration(app_configs, **kwargs):
         if not str(database.get(field, "")).strip():
             errors.append(Error("The production PostgreSQL connection is incomplete.", id="config.E008"))
     sslmode = database.get("OPTIONS", {}).get("sslmode", "")
-    if sslmode not in {"require", "verify-ca", "verify-full"}:
+    connection_kind = getattr(
+        settings,
+        "DATABASE_CONNECTION_KIND",
+        os.environ.get("DATABASE_CONNECTION_KIND", "postgresql"),
+    )
+    if connection_kind == "cloudflare-hyperdrive":
+        if sslmode != "disable":
+            errors.append(
+                Error(
+                    "The Worker-to-Hyperdrive socket must disable TLS; Hyperdrive must require TLS to the PostgreSQL origin.",
+                    id="config.E011",
+                )
+            )
+    elif sslmode not in {"require", "verify-ca", "verify-full"}:
         errors.append(Error("The production PostgreSQL connection must require TLS.", id="config.E011"))
 
     if not settings.ALLOWED_HOSTS_EXPLICIT or not settings.ALLOWED_HOSTS:

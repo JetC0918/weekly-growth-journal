@@ -33,12 +33,33 @@ Use these practices:
 
 The current frontend test command is also listed in the root README. If you change scripts or test configuration, update the documentation in the same change.
 
-## Backend tests
+## Backend unit and integration tests
 
-The planned backend uses Django. When backend code is added, use Django's test framework and keep tests with the app or in its `tests/` package. Run the project's documented command:
+The active backend is Django with Django REST Framework. Tests marked with the Django `integration` tag exercise request handling, authentication, Django models, and the PostgreSQL test database through DRF's API client. They are separate from provider/unit tests and from browser end-to-end tests. The integration tests use Django's isolated test database; they never point at the local development database or production data.
+
+From the repository root, install the locked Python dependencies and start PostgreSQL for the integration group:
 
 ```sh
-uv run python manage.py test
+uv sync
+docker compose up -d db
+```
+
+Run the checks that exclude the endpoint integration group:
+
+```sh
+uv run python backend/manage.py test --exclude-tag=integration
+```
+
+Run the tagged Django/PostgreSQL endpoint integration group by itself:
+
+```sh
+uv run python backend/manage.py test --tag=integration
+```
+
+Run both groups together with the default suite:
+
+```sh
+uv run python backend/manage.py test
 ```
 
 Backend tests should cover:
@@ -51,9 +72,18 @@ Backend tests should cover:
 
 Use the test database and factories or explicit fixtures. Never point tests at a developer or production database. Avoid tests that depend on live provider credentials.
 
-## Integration and end-to-end tests
+The Django integration tag currently covers registration/login and bearer authentication; journal draft persistence and retrieval; per-user access isolation; report completion and evidence; insight correction; commitment lookup across weeks; and review/account-data deletion. Report and follow-up endpoint tests inject deterministic fakes or mock transport so the suite makes no live AI call. The tag is a focused API/database integration group, not a claim of automated OpenAPI conformance or browser testing.
 
-Keep API integration and browser end-to-end tests clearly separate from unit tests. Integration tests should verify the OpenAPI contract against the Django API and PostgreSQL. End-to-end tests should exercise a small number of complete user journeys through the running application.
+The optional `pytest` compatibility suite exercises only the transitional FastAPI prototype and its in-memory store. It is not the Django/PostgreSQL integration suite. Run it separately:
+
+```sh
+uv sync --extra test
+uv run pytest
+```
+
+## Browser end-to-end tests
+
+Browser end-to-end tests exercise a small number of complete user journeys through the running application. They are distinct from the Django integration group.
 
 At minimum, the complete weekly-loop journey should verify that a user can:
 
@@ -65,6 +95,10 @@ At minimum, the complete weekly-loop journey should verify that a user can:
 6. Delete a review or all journal data and verify the related records are gone.
 
 Use isolated test accounts and data. Do not make the tests depend on existing production records, exact AI wording, or timing-sensitive sleeps; wait for an observable state instead.
+
+## Continuous integration
+
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs the Django non-integration group and the tagged PostgreSQL integration group separately, then runs frontend tests, lint, and build. It also validates Compose and builds the backend and frontend images on pull requests and pushes to `main`. A green CI run is evidence for those checks on that revision only; it does not establish deployment or browser end-to-end coverage.
 
 ## Test quality and reporting
 

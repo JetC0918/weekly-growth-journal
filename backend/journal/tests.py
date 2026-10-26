@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import connection
-from django.test import TestCase, override_settings
+from django.test import TestCase, override_settings, tag
 from rest_framework.test import APIClient
 
 from backend.accounts.tokens import create_access_token
@@ -49,6 +49,7 @@ class FakeReportProvider:
         }
 
 
+@tag("integration")
 class JournalAPITests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -264,6 +265,7 @@ class JournalAPITests(TestCase):
 
 
 @override_settings(DEBUG=True, AI_PROVIDER_MODE="fake", AI_API_KEY="")
+@tag("integration")
 class DeterministicWeeklyJourneyTests(TestCase):
     def setUp(self):
         self.assertEqual(connection.vendor, "postgresql")

@@ -66,7 +66,13 @@ export function createMockService(
         save(db);
         return clone(existing);
       }
-      const r: Review = { ...input, id: uid("rev"), status: "draft", createdAt: now, updatedAt: now };
+      const r: Review = {
+        ...input,
+        id: uid("rev"),
+        status: "draft",
+        createdAt: now,
+        updatedAt: now,
+      };
       db.reviews.push(r);
       save(db);
       return clone(r);

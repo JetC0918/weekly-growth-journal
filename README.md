@@ -81,17 +81,25 @@ uv run python backend/manage.py runserver 0.0.0.0:8000
 ```
 
 The unauthenticated health endpoint is `http://localhost:8000/api/health/` and
-returns `{"status":"ok"}`. Check the project and run the Django tests from the
-repository root with:
+returns `{"status":"ok"}`. With dependencies installed and PostgreSQL running
+as described above, run the Django test groups from the repository root:
+
+Run non-integration Django checks and endpoint integration tests separately, or
+run the complete Django suite:
 
 ```sh
 uv run python backend/manage.py check
+uv run python backend/manage.py test --exclude-tag=integration
+uv run python backend/manage.py test --tag=integration
 uv run python backend/manage.py test
 ```
 
-The compatibility test suite checks the transitional FastAPI prototype.
-Django health coverage belongs to the Django suite above. Run the compatibility
-suite from the repository root with:
+The integration group uses Django's isolated PostgreSQL test database and
+deterministic provider fakes. It covers authenticated endpoint flows, user
+isolation, draft/report/insight/commitment behavior, and data deletion. The
+separate compatibility suite checks only the transitional FastAPI prototype
+and in-memory store; it is not Django integration coverage. Run it from the
+repository root with:
 
 ```sh
 uv sync --extra test

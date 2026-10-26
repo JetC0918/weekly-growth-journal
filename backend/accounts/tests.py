@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, tag
 from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework.views import APIView
@@ -22,6 +22,7 @@ class HealthEndpointTests(SimpleTestCase):
         self.assertEqual(response.json(), {"status": "ok"})
 
 
+@tag("integration")
 class AuthenticationAPITests(APITestCase):
     def _protected_response(self, authorization=None):
         request = APIRequestFactory().get(

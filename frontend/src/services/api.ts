@@ -1,11 +1,4 @@
-import type {
-  Commitment,
-  Insight,
-  Report,
-  ReportSection,
-  Review,
-  SaveReviewInput,
-} from "./types";
+import type { Commitment, Insight, Report, ReportSection, Review, SaveReviewInput } from "./types";
 
 /**
  * The single contract for every backend call in the app.

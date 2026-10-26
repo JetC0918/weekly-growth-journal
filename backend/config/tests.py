@@ -10,6 +10,7 @@ class ProductionConfigurationCheckTests(SimpleTestCase):
         "DEBUG": False,
         "SECRET_KEY": "unique-django-production-secret",
         "TOKEN_SIGNING_KEY": "unique-token-production-secret",
+        "DATABASE_CONNECTION_KIND": "postgresql",
         "DATABASE_CONFIG_EXPLICIT": True,
         "DATABASES": {
             "default": {
@@ -83,6 +84,32 @@ class ProductionConfigurationCheckTests(SimpleTestCase):
         database = self.valid_production_settings["DATABASES"]["default"].copy()
         database["OPTIONS"] = {}
         errors = self.check(DATABASES={"default": database})
+        self.assertIn("config.E011", {error.id for error in errors})
+
+    def test_postgresql_tls_disable_is_rejected_without_hyperdrive(self):
+        database = self.valid_production_settings["DATABASES"]["default"].copy()
+        database["OPTIONS"] = {"sslmode": "disable"}
+        errors = self.check(DATABASES={"default": database})
+        self.assertIn("config.E011", {error.id for error in errors})
+
+    def test_hyperdrive_allows_non_tls_worker_socket_with_tls_origin_requirement(self):
+        database = self.valid_production_settings["DATABASES"]["default"].copy()
+        database["OPTIONS"] = {"sslmode": "disable"}
+        self.assertEqual(
+            self.check(
+                DATABASE_CONNECTION_KIND="cloudflare-hyperdrive",
+                DATABASES={"default": database},
+            ),
+            [],
+        )
+
+    def test_hyperdrive_requires_worker_socket_tls_to_be_disabled(self):
+        database = self.valid_production_settings["DATABASES"]["default"].copy()
+        database["OPTIONS"] = {"sslmode": "require"}
+        errors = self.check(
+            DATABASE_CONNECTION_KIND="cloudflare-hyperdrive",
+            DATABASES={"default": database},
+        )
         self.assertIn("config.E011", {error.id for error in errors})
 
     def test_unknown_environment_is_rejected(self):

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  django-unit:
+    name: Django tests (excluding integration)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked
+      - run: uv run python backend/manage.py check
+      - run: uv run python backend/manage.py test --exclude-tag=integration
+
+  django-integration:
+    name: Django and PostgreSQL API integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: weekly_growth_journal
+          POSTGRES_USER: weekly_growth_journal
+          POSTGRES_PASSWORD: weekly-growth-ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U weekly_growth_journal -d weekly_growth_journal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: development
+      DJANGO_DEBUG: "true"
+      DJANGO_SECRET_KEY: ci-only-secret
+      TOKEN_SIGNING_KEY: ci-only-token-key
+      DJANGO_ALLOWED_HOSTS: localhost,testserver
+      POSTGRES_DB: weekly_growth_journal
+      POSTGRES_USER: weekly_growth_journal
+      POSTGRES_PASSWORD: weekly-growth-ci
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      AI_PROVIDER_MODE: fake
+      AI_API_KEY: ""
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --locked
+      - run: uv run python backend/manage.py test --tag=integration
+
+  frontend:
+    name: Frontend tests, lint, and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - run: bun run test
+      - run: bun run lint
+      - run: bun run build
+
+  containers:
+    name: Compose configuration and image builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker compose config -q
+      - run: docker compose build

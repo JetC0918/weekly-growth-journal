@@ -42,9 +42,13 @@ export function suggestFollowUps(r: SaveReviewInput): string[] {
   if (bad) q.push(`Looking at "${bad}" — which part of that was within your control?`);
   if (a.wentWell.trim().length < 40)
     q.push("What's one small thing that went well that you might be overlooking?");
-  if (!a.learned.trim()) q.push("If a friend had lived your week, what would you tell them they learned?");
+  if (!a.learned.trim())
+    q.push("If a friend had lived your week, what would you tell them they learned?");
   const plan = a.doDifferently.trim();
-  if (plan && !/\d|daily|every|each|monday|tuesday|wednesday|thursday|friday|morning|evening/i.test(plan))
+  if (
+    plan &&
+    !/\d|daily|every|each|monday|tuesday|wednesday|thursday|friday|morning|evening/i.test(plan)
+  )
     q.push("How will you know, concretely, that you did this next week?");
   if (!plan) q.push("If you could change just one thing next week, what would it be?");
   return q.slice(0, 3);
@@ -59,7 +63,9 @@ export function generateReport(review: Review, history: Review[]): Report {
 
   const learned = sentences(a.learned);
   if (learned[0])
-    takeaways.push(insight(`You noticed something about yourself: ${learned[0]}`, "observation", learned[0]));
+    takeaways.push(
+      insight(`You noticed something about yourself: ${learned[0]}`, "observation", learned[0]),
+    );
   const good = sentences(a.wentWell);
   const bad = sentences(a.didntGoWell);
   if (good.length && bad.length)
@@ -71,9 +77,11 @@ export function generateReport(review: Review, history: Review[]): Report {
       ),
     );
 
-  for (const s of good.slice(0, 3)) strengths.push(insight(`Something worked: ${s}`, "observation", s));
+  for (const s of good.slice(0, 3))
+    strengths.push(insight(`Something worked: ${s}`, "observation", s));
 
-  for (const s of bad.slice(0, 2)) challenges.push(insight(`A difficulty you named: ${s}`, "observation", s));
+  for (const s of bad.slice(0, 2))
+    challenges.push(insight(`A difficulty you named: ${s}`, "observation", s));
   const better = sentences(a.handledBetter)[0];
   if (better)
     challenges.push(
@@ -95,7 +103,11 @@ export function generateReport(review: Review, history: Review[]): Report {
     );
   } else if (pa?.attempted === "yes") {
     strengths.push(
-      insight("You followed through on last week's commitment.", "observation", pa.whatHappened || "Attempted: yes"),
+      insight(
+        "You followed through on last week's commitment.",
+        "observation",
+        pa.whatHappened || "Attempted: yes",
+      ),
     );
   }
 

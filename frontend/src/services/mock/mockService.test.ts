@@ -3,7 +3,10 @@ import { createMockService } from "./mockService";
 import { emptyAnswers, type SaveReviewInput } from "../types";
 import { weekStartOf } from "../week";
 
-const input = (weekStart: string, over: Partial<SaveReviewInput["answers"]> = {}): SaveReviewInput => ({
+const input = (
+  weekStart: string,
+  over: Partial<SaveReviewInput["answers"]> = {},
+): SaveReviewInput => ({
   weekStart,
   answers: { ...emptyAnswers(), ...over },
   freeWriting: "",
@@ -29,7 +32,10 @@ describe("mock GrowthService", () => {
   it("completing a review produces a report with evidence from the user's own words", async () => {
     const s = createMockService();
     const r = await s.saveReview(
-      input("2026-10-19", { wentWell: "Shipped the release.", doDifferently: "Plan Monday mornings." }),
+      input("2026-10-19", {
+        wentWell: "Shipped the release.",
+        doDifferently: "Plan Monday mornings.",
+      }),
     );
     const report = await s.completeReview(r.id);
     expect((await s.getReview(r.id))?.status).toBe("completed");
@@ -60,7 +66,10 @@ describe("mock GrowthService", () => {
     const id = rep.strengths[0]!.id;
     await s.updateInsight(r.id, "strengths", id, { status: "rejected" });
     const after = await s.updateInsight(r.id, "strengths", id, { correction: "It was with Alex." });
-    expect(after.strengths[0]).toMatchObject({ status: "rejected", correction: "It was with Alex." });
+    expect(after.strengths[0]).toMatchObject({
+      status: "rejected",
+      correction: "It was with Alex.",
+    });
   });
 
   it("keeps a single primary commitment per review and surfaces it the next week", async () => {
