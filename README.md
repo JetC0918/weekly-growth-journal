@@ -120,12 +120,13 @@ transition note.
 - `backend/` — Django/DRF API, Docker image definition, and transitional FastAPI source under `backend/app/`.
 - `docker-compose.yml` — PostgreSQL, Django API, and production-built frontend for local full-stack use.
 - `observability/` — separate local OpenTelemetry Collector, Prometheus, Loki, Tempo, and Grafana stack.
-- `.github/workflows/ci.yml` — pull-request/main backend, frontend, and container checks.
+- `.github/workflows/ci.yml` — pull-request/main backend, frontend, container, dependency-audit, and tracked-content guardrail checks.
 - `backend/cloudflare/` and `frontend/wrangler.jsonc` — prepared Cloudflare Worker configurations; deployment remains disabled pending the documented compatibility and account setup gates.
 - `openapi.yaml` — API contract for the backend.
 - `_docs/specs.md` — product problem, MVP decisions, expected experience, scope, and success criteria.
 - `_docs/process.md` — project work process and role responsibilities.
 - `_docs/team/` — PM, engineer, and QA role instructions.
+- `agent-capabilities/`, `agent-hooks/`, `mcp-server/`, `plugins/`, and `docs/agent-extension-pack.md` — reusable local-first agent extension pack and its permission/data policies.
 
 ## Development workflow
 

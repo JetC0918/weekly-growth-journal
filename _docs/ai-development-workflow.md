@@ -55,7 +55,7 @@ required checks, or branch protection; none of those was verified here.
 | Session permissions | Access and approval controls come from the running tool environment. Record an observed restriction, approval request, or denial and its outcome when relevant. Do not infer unrestricted access from a successful read or claim the repository enforces a session rule. |
 | Recommended handling | Supply the minimum relevant context; keep passwords, tokens, provider keys, and private reflection content out of prompts, logs, and task records. Use synthetic examples and safe error summaries. Inspect a concrete diff before an external write or destructive action and confirm it is covered by existing authorization. These practices are not installed controls. |
 | Human review | Capture the reviewer's identity, date, decision, and requested corrections when supplied. AI QA PASS and an unchecked checkbox are not human approval. Pending review is an evidence status, not a new requirement to pause authorized work. |
-| Automated hooks/CI | The earlier baseline had no tracked hook, pre-commit, or CI setup. A tracked CI workflow now defines Django unit/integration, frontend test/lint/build, and Compose/image-build jobs. It does not run dependency advisory scans. A separate Cloudflare deployment workflow is conditional on successful CI on `main` and repository configuration. Workflow definitions alone do not prove a successful run, required-check enforcement, or deployment; those remain unverified until observed. |
+| Automated hooks/CI | The repository CI workflow defines Django unit/integration, frontend test/lint/build, Compose/image builds, dependency advisory scans, and a tracked-content secret heuristic. Audit outputs are uploaded as artifacts; known dependency advisories are not suppressed from the artifacts. The Cloudflare deployment workflow is separate and conditional on successful CI on `main` plus repository configuration. Workflow definitions alone do not prove a successful run, required-check enforcement, or deployment; those remain unverified until observed. |
 
 Privacy/security review is triggered by changes to authentication, ownership,
 deletion/export, logs, provider context, secrets, or access configuration; see
@@ -91,6 +91,53 @@ observed. Record deployment evidence only when an actual environment was
 deployed and checked.
 
 ## Task records
+
+### 2026-10-26 — Close remaining rubric evidence gaps except deployment
+
+- **Task/prompt (summary):** User asked to fix the remaining 1/2 rubric areas:
+  AI workflow, API contract, CI/CD, agent extension pack, security/audit/DevOps
+  hardening, and observability. Deployment was explicitly excluded.
+- **Baseline/scope:** Started from `676c00a` on `main`. Preserved a pre-existing
+  unrelated edit in `_docs/team/software-engineer.md`. Did not modify Cloudflare
+  deployment files or perform deployment.
+- **Context:** Read project instructions, process and testing guidance, rubric
+  assessment thread, active OpenAPI/client/Django routes and serializers,
+  security-audit skill guidance, existing audit/observability docs, and CI config.
+  Independent source reviews compared the API contract with implementation and
+  reviewed auth, ownership, browser token handling, telemetry, and extension
+  boundaries.
+- **AI work:** Corrected OpenAPI descriptions and auth validation wording; added
+  the public health contract, nullable/blank schema details, and the date/error
+  behavior actually implemented. Added a reusable API-review capability,
+  specialist instructions, read-only MCP context server, staged-secret guardrail,
+  permission notes, AI data policy, and extension-pack setup guide. CI now
+  captures Python/Bun dependency audit output and runs the tracked-content
+  guardrail. Added a second source-review report with hardening notes and the
+  observed telemetry-start blocker.
+- **AI review:** API contract review found no other path/method mismatch after
+  the corrections. Security source review found no confirmed exploitable
+  vulnerability; public auth throttling and password-validator usage remain
+  hardening notes. These were source reviews, not human approval or runtime
+  attack tests.
+- **Human review:** Not recorded. A project owner still needs to inspect the
+  concrete change and provide a decision before this criterion can be claimed.
+- **Verification:** Python compilation for the MCP server and secret guardrail
+  passed; OpenAPI YAML parsed; the tracked-content guardrail passed on 194
+  tracked files; audit findings JSON schema validation passed with zero
+  confirmed findings; `git diff --check` passed. The GitHub connector returned
+  no status checks or workflow runs for the baseline commit. Docker CLI 29.9.2
+  could not connect to `npipe:////./pipe/docker_engine` (`permission denied`),
+  so the telemetry stack and Grafana correlation walkthrough were not run.
+  Bun was unavailable locally; the Python audit attempt could not access the
+  configured uv cache, and `pip-audit` is not installed in the project venv.
+- **Automation:** CI workflow definitions include dependency scans and content
+  guardrail, but no hosted run for this change exists yet. Audit findings are
+  uploaded for triage; the known historical frontend advisories remain an
+  unresolved dependency backlog pending a current scan.
+- **Outcome:** Source-level workflow, API, extension, and security evidence gaps
+  are addressed. Human review, a green hosted Actions run, current lockfile scan
+  results, and a correlated Grafana journey remain unverified. Deployment work
+  was excluded as requested.
 
 ### 2026-10-26 — Close containerization, integration, and CI/CD rubric gaps
 
