@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { z } from "zod";
+import { object, string } from "zod";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -25,9 +25,8 @@ export const Route = createFileRoute("/review")({
   ssr: false,
   beforeLoad: requireAuthenticated,
   pendingComponent: PageLoading,
-  validateSearch: z.object({
-    week: z
-      .string()
+  validateSearch: object({
+    week: string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
   }),
