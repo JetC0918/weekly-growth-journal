@@ -125,7 +125,6 @@ describe("journal edit and deletion flows", () => {
     expect(screen.getByLabelText("Anything else on your mind? (free writing)")).toHaveValue(
       "A saved thought",
     );
-    expect(screen.getByLabelText("What helped?")).toHaveValue("A short plan");
     expect(screen.getByLabelText("What happened?")).toHaveValue("I tried once");
     expect(screen.getByLabelText("What did you learn from it?")).toHaveValue("Start small");
 
@@ -141,6 +140,7 @@ describe("journal edit and deletion flows", () => {
     const reopened = await services.getReviewForWeek(WEEK);
     const listed = await services.listReviews();
     expect(reopened?.answers.learned).toBe("Planning helps me begin sooner");
+    expect(reopened?.followUps).toEqual([{ question: "What helped?", answer: "A short plan" }]);
     expect(listed).toHaveLength(1);
     expect(state.reviews()).toHaveLength(1);
   });
