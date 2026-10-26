@@ -41,6 +41,7 @@ services:
       OTEL_SERVICE_NAME: weekly-growth-journal-api
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       OTEL_SEMCONV_STABILITY_OPT_IN: http
+      PORT: 8000
     depends_on:
       db:
         condition: service_healthy

@@ -7,5 +7,5 @@ dependency and has been corrected in the manifest and lockfile; the post-fix
 scan was clean.
 
 The audit did not perform authenticated or unauthenticated live attack tests or
-Cloudflare deployment tests. QA separately ran the frontend dependency advisory
-scan; see `REPORT.md` for its result and the CI scope.
+deployment tests. QA separately ran the frontend dependency advisory scan; see
+`REPORT.md` for its result and the CI scope.

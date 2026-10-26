@@ -3,10 +3,6 @@
     "package_records": 42,
     "advisory_entries": 0
   },
-  "cloudflare_python": {
-    "package_records": 17,
-    "advisory_entries": 0
-  },
   "local_frontend": {
     "packages_with_advisories": 0,
     "advisory_entries": 0

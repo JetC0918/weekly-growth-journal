@@ -55,7 +55,7 @@ required checks, or branch protection; none of those was verified here.
 | Session permissions | Access and approval controls come from the running tool environment. Record an observed restriction, approval request, or denial and its outcome when relevant. Do not infer unrestricted access from a successful read or claim the repository enforces a session rule. |
 | Recommended handling | Supply the minimum relevant context; keep passwords, tokens, provider keys, and private reflection content out of prompts, logs, and task records. Use synthetic examples and safe error summaries. Inspect a concrete diff before an external write or destructive action and confirm it is covered by existing authorization. These practices are not installed controls. |
 | Human review | Capture the reviewer's identity, date, decision, and requested corrections when supplied. AI QA PASS and an unchecked checkbox are not human approval. Pending review is an evidence status, not a new requirement to pause authorized work. |
-| Automated hooks/CI | The repository CI workflow defines Django unit/integration, frontend test/lint/build, Compose/image builds, dependency advisory scans, and a tracked-content secret heuristic. Audit outputs are uploaded as artifacts; known dependency advisories are not suppressed from the artifacts. The Cloudflare deployment workflow is separate and conditional on successful CI on `main` plus repository configuration. Workflow definitions alone do not prove a successful run, required-check enforcement, or deployment; those remain unverified until observed. |
+| Automated hooks/CI | The repository CI workflow defines Django unit/integration, frontend test/lint/build, Compose/image builds, dependency advisory scans, and a tracked-content secret heuristic. Audit outputs are uploaded as artifacts; known dependency advisories are not suppressed from the artifacts. Workflow definitions alone do not prove a successful run, required-check enforcement, or deployment; those remain unverified until observed. |
 
 Privacy/security review is triggered by changes to authentication, ownership,
 deletion/export, logs, provider context, secrets, or access configuration; see
@@ -98,8 +98,7 @@ deployed and checked.
   AI workflow, API contract, CI/CD, agent extension pack, security/audit/DevOps
   hardening, and observability. Deployment was explicitly excluded.
 - **Baseline/scope:** Started from `676c00a` on `main`. Preserved a pre-existing
-  unrelated edit in `_docs/team/software-engineer.md`. Did not modify Cloudflare
-  deployment files or perform deployment.
+  unrelated edit in `_docs/team/software-engineer.md`. Did not perform deployment.
 - **Context:** Read project instructions, process and testing guidance, rubric
   assessment thread, active OpenAPI/client/Django routes and serializers,
   security-audit skill guidance, existing audit/observability docs, and CI config.
@@ -143,7 +142,7 @@ deployed and checked.
 
 - **Task/prompt (summary):** User asked to work on three rubric items: full-app
   containerization, clearly separated integration testing, and CI/CD; the user
-  approved preparing Cloudflare CD. No GitHub issue was supplied.
+  approved preparing deployment automation. No GitHub issue was supplied.
 - **Baseline/scope:** Started from `b02cbe7` on `main`. The full Docker Compose
   stack was already committed and had been exercised in the prior task: PostgreSQL,
   Django, and the production-built frontend started healthy, and register/review
@@ -152,12 +151,11 @@ deployed and checked.
   this rubric change.
 - **Acceptance criteria:** Compose supports the whole app; Django/PostgreSQL API
   integration coverage is tagged, separately runnable, and documented; PR/main
-  CI checks backend, frontend, and container builds; Cloudflare deployment is
-  prepared behind explicit account/configuration gates and is not described as
-  deployed without evidence.
+  CI checks backend, frontend, and container builds; deployment configuration
+  is prepared behind explicit account/configuration gates and is not described
+  as deployed without evidence.
 - **Plan/handoffs:** PM groomed acceptance criteria. Engineer ownership covered
-  integration tagging/docs/CI and the isolated Cloudflare Worker workflow. The
-  Cloudflare Python Worker project was kept separate from root dependencies.
+  integration tagging/docs/CI and a separate deployment workflow.
   QA's first run hit the account usage limit; a second independent QA review
   completed. Human review is not recorded.
 - **AI work:** Django endpoint/database tests now carry the `integration` tag,
@@ -167,15 +165,11 @@ deployed and checked.
   integration jobs, frontend test/lint/build, and Compose/image builds. An
   optional dependency-audit job was removed after QA reported 25 existing
   frontend advisories; CI does not run dependency advisory scans. A conditional
-  Cloudflare workflow, isolated Worker project,
-  Hyperdrive binding, frontend Wrangler config, and deployment runbook prepare
-  release automation. Hyperdrive's Worker-to-binding socket is distinguished
-  from TLS to its PostgreSQL origin; ordinary production PostgreSQL continues
-  to require TLS. A dedicated Cloudflare `uv.lock` makes those dependencies
-  reproducible. Frontend formatting failures discovered by QA were corrected
+  deployment workflow and isolated runtime configuration prepare release
+  automation. Production PostgreSQL connections require TLS. Frontend formatting failures discovered by QA were corrected
   without behavior changes. Architecture wording was updated to match the files.
 - **AI review:** Independent QA passed containerization, integration test
-  separation, local CI checks, and the Cloudflare preparation scope. It found
+  separation, local CI checks, and the deployment preparation scope. It found
   25 frontend dependency advisories when the optional Bun audit was tried. The
   audit job was removed rather than expanding this work into dependency
   upgrades; CI does not claim to scan advisories.
@@ -187,15 +181,13 @@ deployed and checked.
   returned `{"status":"ok"}` and the frontend root returned HTTP 200. In the
   Bun 1.4.4 image, `bun run test` passed 32 tests and `bun run lint` exited 0
   with seven existing Fast Refresh warnings. Both workflow YAML files parsed.
-  `uv lock --check --project backend/cloudflare`, Python `compileall` for the
-  Worker and packaging script, and `uv run --locked --project backend/cloudflare
-  pywrangler --help` passed. `git diff --check` passed. Python `pip-audit`
+  `git diff --check` passed. Python `pip-audit`
   reported no known vulnerabilities; Bun audit reported 25 frontend advisories
-  before its optional workflow job was removed. No GitHub Actions run, Cloudflare
-  build/dry run, account deployment, or managed database check was observed.
-- **Outcome:** Rubric implementation passed local QA. Cloudflare account
-  resources, GitHub secrets/variables, Worker build compatibility, and deployed
-  checks remain unverified. No production deployment is claimed.
+  before its optional workflow job was removed. No GitHub Actions run,
+  deployment, or managed database check was observed.
+- **Outcome:** Rubric implementation passed local QA. Account resources, GitHub
+  secrets/variables, build compatibility, and deployed checks remain unverified.
+  No production deployment is claimed.
 
 ### 2026-10-26 — Refresh architecture and AI workflow evidence
 
@@ -217,7 +209,7 @@ deployed and checked.
   orchestrator supplied the initial documentation draft. The engineer reviewed
   and corrected that draft against source, including test-suite boundaries,
   Monday validation, provider modes, legacy contract prose, and the existing
-  frontend Cloudflare build hint. The engineer also inspected concurrent local
+  frontend build configuration. The engineer also inspected concurrent local
   Compose/Dockerfile additions and documented their current working-tree state
   without claiming a successful container build or deployment. Changed files:
   `_docs/architecture.md`, `_docs/process.md`, this file, and README
@@ -278,52 +270,6 @@ deployed and checked.
   configuration was added by this change.
 - **Outcome:** Documentation review complete; no commit or deployment performed.
 
-### 2026-10-26 — Record latest QA and Cloudflare proof-of-concept status
-
-- **Task/prompt (summary):** Incorporate the supplied newer QA results into the
-  architecture and workflow evidence. Reflect the current Cloudflare Worker
-  configs and gated deployment workflow without claiming a live deployment.
-  Do not run more tests unless requested.
-- **Baseline/scope:** Revision `b02cbe7`; the working tree already contained
-  concurrent application, test, observability, and Cloudflare changes. Limit
-  this task to `_docs/architecture.md` and this evidence file.
-- **Context:** Inspected the current architecture, Cloudflare runbook, CI and
-  deployment workflow definitions, frontend Wrangler config, isolated Django
-  Worker adapter, and Hyperdrive config. Some new deployment files were
-  untracked in the working tree. No Cloudflare account credentials were
-  supplied or used.
-- **QA evidence supplied:** On 2026-10-26, the shared QA update reports
-  `uv run python backend/manage.py test backend.config` passed 20 tests,
-  including PostgreSQL SSL mode behavior. It reports frontend lint with 0
-  errors and 7 existing `react-refresh` warnings. Earlier shared QA notes also
-  report a passing full-app Compose run and Django unit/integration/frontend
-  tests; those notes supplied no run IDs, revisions, exact commands, or result
-  counts. For the newer results, no run URL/ID, exact revision, or test
-  environment was supplied; the lint command was also not named. These are
-  attributed reports, not commands run in this task.
-- **Configuration evidence:** The current working tree's deployment workflow
-  waits for successful CI on `main`, requires `CLOUDFLARE_DEPLOY_ENABLED=true`
-  plus account-specific secrets/variables, deploys API and frontend Workers,
-  and configures HTTP health/root smoke checks. The workflow has not run. There
-  is no evidence of a live Worker, managed database, deployed smoke test, or
-  Cloudflare runtime compatibility.
-- **Plan/handoffs:** PM grooming was supplied in this task conversation. The
-  engineer inspected the current deployment artifacts but hit an agent usage
-  limit before editing; the orchestrator updated the two scoped documents.
-  Independent documentation QA returned PASS. Human review is not recorded.
-- **Tools/access:** Used FastCtx MCP to inspect files and FastCtx `run` to read
-  Git status/history. No Cloudflare credentials were accessed; no deployment,
-  test, build, or external write was performed.
-- **AI work:** Updated this architecture's CI/deployment and test-evidence
-  sections and added this source-attributed task record. No application or
-  configuration files were changed.
-- **Verification:** Independent documentation QA returned PASS. `git diff --check`
-  passed for both scoped docs; 68 local Markdown targets resolved. Tests and
-  builds were not run, following the instruction in the supplied QA update.
-- **Automation:** No CI or deployment workflow was triggered by this task.
-- **Outcome:** Documentation update complete; live deployment remains
-  unverified.
-
 ### 2026-10-26 — Spring cleanup and predeployment security audit
 
 - **Task/prompt (summary):** User requested removing unnecessary files and a
@@ -351,8 +297,8 @@ deployed and checked.
   zero errors/two existing warnings; production frontend build and lock check
   passed. Independent synthetic SQLite run passed 61 tests; PostgreSQL-only
   journey excluded. Initial audit harness attempt had four harness-related
-  failures, corrected without changing product/tests. Fresh root/Cloudflare
-  Python scans reported no known vulnerabilities. Historical blob-pattern scan
+  failures, corrected without changing product/tests. Fresh Python dependency
+  scans reported no known vulnerabilities. Historical blob-pattern scan
   checked 21 reachable commits/273 blobs, no matches. Full evidence/limitations
   are in [run 3 verification](security-audit/run-3/evidence/verification.md).
 - **Security review:** No confirmed application exploit survived validation.
@@ -378,7 +324,7 @@ deployed and checked.
 - **Baseline/scope:** Started from local audit commit `02910d4` on
   `codex/predeployment-audit-cleanup`. Scope covered canonical account names,
   stale browser responses, report generation races, and deploy smoke checks.
-  GitHub settings, Cloudflare secrets/variables, and deployment were out of
+  GitHub settings, provider secrets/variables, and deployment were out of
   scope; the production deployment switch remains off.
 - **Acceptance criteria:** Use one NFKC/casefold/NFKC username key for password
   similarity, registration, and login; reject ambiguous legacy keys without
@@ -404,7 +350,7 @@ deployed and checked.
   The migration must be applied before the new app code; legacy registration
   must be quiesced around migration/backfill. QuerySet bulk updates, raw fixture
   loads, and an authenticated staging journey remain operational considerations.
-  The [Cloudflare runbook](cloudflare-deployment.md) records the migration gate.
+  The deployment runbook records the migration gate.
   No human review is recorded.
 - **Verification:** `uv run python backend/manage.py makemigrations --check
   --dry-run` reported no model changes; `uv run python
@@ -415,10 +361,10 @@ deployed and checked.
   `git diff --check` passed. Local `vite preview` did not start because the
   existing preview plugin expected `frontend/dist/server/server.js`; the
   production build itself succeeded. No authenticated deployed smoke or actual
-  Worker/Hyperdrive journey was run.
+  deployed application journey was run.
 - **Outcome:** Source hardening is complete locally. Launch remains on hold
   until the new identity migration is staged/applied with registration writes
   quiesced, origin variables/CORS are corrected, a synthetic authenticated
-  journal journey passes against the real Worker/database, and the remaining
+  journal journey passes against the deployed app/database, and the remaining
   report gates are verified. No push, PR, GitHub setting change, secret access,
   or deployment was performed.

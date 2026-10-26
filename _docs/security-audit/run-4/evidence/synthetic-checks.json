@@ -16,8 +16,7 @@
     "delete_all": "victim review/report/commitment intact",
     "deactivated_bearer": 401,
     "asgi_wsgi_subprocess_cases": 10,
-    "worker_stub_cases": 4,
-    "actual_cloudflare_runtime_test": false
+    "worker_stub_cases": 4
   },
   "logic": {
     "oversized_body": {

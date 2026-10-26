@@ -1,9 +1,12 @@
 # Private deployment preparation
 
-This document is a preparation guide. No hosting platform, database, private
-access service, or public endpoint has been provisioned by this work. Before
-release, enforce the configured CORS origin allowlist and verify the actual
-frontend origin and preflight request in the private staging environment.
+This document is a preparation guide. Render deployment configuration exists,
+but no hosted service, database, private-access service, or live endpoint has
+been provisioned by this work. Render Free web services are public; CORS is not
+an access-control mechanism. Before using a Render Free deployment, keep
+account-level authentication enabled and verify the exact frontend origin and
+preflight request. For private network access, use a paid/private hosting
+configuration or an identity-aware gateway.
 
 ## Production settings
 

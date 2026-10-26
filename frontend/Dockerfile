@@ -16,5 +16,5 @@ ENV NODE_ENV=production \
     NITRO_PORT=3000
 WORKDIR /app
 COPY --from=build /app/.output ./.output
-EXPOSE 3000
-CMD ["node", ".output/server/index.mjs"]
+EXPOSE 10000
+CMD ["sh", "-c", "export NITRO_PORT=\"${PORT:-${NITRO_PORT:-3000}}\"; exec node .output/server/index.mjs"]

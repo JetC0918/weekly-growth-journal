@@ -11,6 +11,6 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 COPY backend ./backend
 
-EXPOSE 8000
+EXPOSE 10000
 
-CMD ["sh", "-c", "uv run --no-sync python backend/manage.py migrate && exec uv run --no-sync uvicorn backend.config.asgi:application --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "uv run --no-sync python backend/manage.py migrate && exec uv run --no-sync uvicorn backend.config.asgi:application --host 0.0.0.0 --port \"${PORT:-10000}\""]
