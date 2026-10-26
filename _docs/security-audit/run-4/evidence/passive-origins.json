@@ -1,0 +1,23 @@
+[
+  {
+    "url": "https://weekly-growth-journal-api.fiero19892.workers.dev/api/health/",
+    "method": "GET",
+    "credentials": false,
+    "body_read": false,
+    "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032)>"
+  },
+  {
+    "url": "https://weekly-growth-journal-api.fiero19892.workers.dev/api/reviews",
+    "method": "GET",
+    "credentials": false,
+    "body_read": false,
+    "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032)>"
+  },
+  {
+    "url": "https://weekly-growth-journal-frontend.fiero19892.workers.dev/",
+    "method": "GET",
+    "credentials": false,
+    "body_read": false,
+    "error": "URLError: <urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1032)>"
+  }
+]

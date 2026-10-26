@@ -1,0 +1,14 @@
+[
+  {
+    "url": "https://weekly-growth-journal-api.fiero19892.workers.dev/api/health/",
+    "exit": 0,
+    "http_code": "200",
+    "error": ""
+  },
+  {
+    "url": "https://weekly-growth-journal-frontend.fiero19892.workers.dev/",
+    "exit": 0,
+    "http_code": "200",
+    "error": ""
+  }
+]

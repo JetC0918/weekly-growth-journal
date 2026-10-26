@@ -1,0 +1,37 @@
+{
+  "root_python": {
+    "package_records": 42,
+    "advisory_entries": 0
+  },
+  "cloudflare_python": {
+    "package_records": 17,
+    "advisory_entries": 0
+  },
+  "local_frontend": {
+    "packages_with_advisories": 0,
+    "advisory_entries": 0
+  },
+  "github_main_frontend": {
+    "ref": "b7c0ae9d6d0fb228db2994201ab2a936069a9f8f",
+    "packages_with_advisories": 9,
+    "advisory_entries": 25,
+    "distinct_advisory_urls": 18,
+    "severities": {
+      "moderate": 9,
+      "high": 14,
+      "critical": 1,
+      "low": 1
+    },
+    "packages": [
+      "@vitest/mocker",
+      "brace-expansion",
+      "js-yaml",
+      "launch-editor",
+      "nanoid",
+      "shell-quote",
+      "source-map-js",
+      "vite",
+      "zod"
+    ]
+  }
+}

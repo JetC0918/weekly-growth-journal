@@ -1,0 +1,89 @@
+{
+  "scope": "Current local source 5684e13; synthetic memory-only probes, no provider/customer/configured database",
+  "auth": {
+    "invalid_registration_cases": {
+      "count": 6,
+      "status": 422
+    },
+    "anonymous_and_staff_cookie_api": 401,
+    "invalid_bearer_cases": {
+      "count": 6,
+      "status": 401
+    },
+    "cross_user_paths": 9,
+    "victim_mutation": false,
+    "foreign_id_save": "attacker-owned row only",
+    "delete_all": "victim review/report/commitment intact",
+    "deactivated_bearer": 401,
+    "asgi_wsgi_subprocess_cases": 10,
+    "worker_stub_cases": 4,
+    "actual_cloudflare_runtime_test": false
+  },
+  "logic": {
+    "oversized_body": {
+      "bytes": 3145728,
+      "status": 400,
+      "saved_reviews": 0
+    },
+    "cross_account_context": {
+      "owner_history_present": true,
+      "victim_marker_present": false,
+      "foreign_commitment_id_forwarded": false
+    },
+    "edit_during_provider": {
+      "status": 200,
+      "review": "CHANGED-EVIDENCE",
+      "report_evidence": "ORIGINAL-EVIDENCE"
+    },
+    "delete_during_provider": {
+      "status": 500,
+      "review_resurrected": false,
+      "victim_preserved": true,
+      "secret_marker_in_body": false
+    },
+    "postgres_concurrency_test": false
+  },
+  "client_independent": {
+    "ordinary_query": {
+      "old_promise": "CancelledError",
+      "cache": "B-only"
+    },
+    "delayed_mutation_actual_null_guard": {
+      "review": null,
+      "oldReportPresent": true,
+      "loaderThrowsNotFound": true,
+      "reportPageCanRender": false
+    },
+    "old_401": {
+      "before": "B authenticated",
+      "after": "signed out",
+      "remote_attacker_capability_established": false
+    }
+  },
+  "normalization_independent": {
+    "numeric_similarity": {
+      "string_status": 422,
+      "number_status": 201
+    },
+    "unicode_collision": {
+      "registration_statuses": [
+        201,
+        201
+      ],
+      "stored_names": [
+        "audituser",
+        "Audituser"
+      ],
+      "distinct_subjects": true,
+      "victim_login_status": 200,
+      "victim_subject_unchanged": true,
+      "new_account_login": 401,
+      "second_bearer_review_count": 0,
+      "victim_review_present": true
+    }
+  },
+  "rejected_probe_corrections": [
+    "Initial Node server-conditioned router result discarded; browser-conditioned rerun completed.",
+    "Hunter route mock used404; independent test used actual wrong-owner null200 and confirmed loader notFound guard."
+  ]
+}
