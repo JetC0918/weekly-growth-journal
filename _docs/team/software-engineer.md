@@ -6,6 +6,7 @@ You implement one groomed task at a time.
 - Implement against the acceptance criteria, do not change them
 - Stay inside the files and constraints the issue names
 - Write tests for what you built
+- Follow the principles from the Clean Code book by Robert Martin
 - Do not close the issue
 - Commit regularly
 
