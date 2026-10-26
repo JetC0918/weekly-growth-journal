@@ -1,0 +1,82 @@
+{
+  "title": "Weekly Growth Journal",
+  "uid": "weekly-growth-journal",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(journal_workflow_events_total, deployment_environment_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "version",
+        "label": "Version",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(journal_workflow_events_total{deployment_environment_name=~\"$environment\"}, service_version)",
+        "includeAll": true,
+        "allValue": ".*",
+        "current": { "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Workflow events per minute",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum by (workflow_event, outcome) (rate(journal_workflow_events_total{deployment_environment_name=~\"$environment\", service_version=~\"$version\"}[5m])) * 60",
+          "legendFormat": "{{workflow_event}} · {{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "HTTP request latency (p95)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{deployment_environment_name=~\"$environment\", service_version=~\"$version\"}[5m])))",
+          "legendFormat": "{{http_route}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Correlated application logs",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 9 },
+      "targets": [
+        { "expr": "{service_name=\"weekly-growth-journal-api\", deployment_environment_name=~\"$environment\", service_version=~\"$version\"}", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "traces",
+      "title": "Recent API traces",
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 9 },
+      "targets": [
+        { "queryType": "search", "serviceName": "weekly-growth-journal-api", "refId": "A" }
+      ]
+    }
+  ]
+}

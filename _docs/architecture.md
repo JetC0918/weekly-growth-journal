@@ -2,7 +2,7 @@
 
 **Status:** Current repository architecture, with planned deployment work labeled separately.
 
-This describes source inspected on 2026-10-26: baseline revision `c5e25e5` plus the current working-tree Compose/Dockerfile additions, not a fresh runtime verification. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service and an earlier FastAPI prototype. Cloudflare deployment remains planned; the frontend's existing build wrapper has a Cloudflare target hint, but no Worker deployment configuration or deployed-environment evidence is checked in.
+This describes source inspected on 2026-10-26, including the current working-tree Cloudflare proof-of-concept files; some deployment files are untracked in this workspace. The application implements frontend-to-Django HTTP integration and PostgreSQL-backed journal models. It retains a mock service and an earlier FastAPI prototype. Cloudflare configuration and a gated deployment workflow now exist in the working tree, but no live deployment or Cloudflare runtime verification has been reported.
 
 ## Implemented components
 
@@ -55,12 +55,30 @@ Test files are present; their presence does not show that they were run or passe
 
 Commands and database prerequisites are listed in [`AGENTS.md`](../AGENTS.md) and [`README.md`](../README.md). No test result is claimed here; check the task's workflow record for verification performed on a particular change.
 
-There is no tracked CI workflow or deployed end-to-end test configuration. Existing tests should not be described as a verified release pipeline.
+The current working tree contains a [CI workflow](../.github/workflows/ci.yml) for Django unit and PostgreSQL integration tests, frontend tests/lint/build, and Compose configuration and container builds. It does not run dependency advisory scans. The [Cloudflare deployment workflow](../.github/workflows/deploy-cloudflare.yml) is gated on successful CI for `main`, the repository variable `CLOUDFLARE_DEPLOY_ENABLED=true`, and required GitHub secrets and variables; it deploys the API and frontend Workers, then checks the public API health endpoint and frontend root. These are configured steps, not evidence that CI or deployment ran. No full deployed journal journey is configured or reported. A green CI run proves only the checks reported for that revision.
+
+### Reported QA results
+
+The following results were supplied in a QA update on 2026-10-26 and were not rerun during this documentation change:
+
+- `uv run python backend/manage.py test backend.config` — 20 tests passed, including PostgreSQL SSL mode behavior.
+- Frontend lint — 0 errors and 7 existing `react-refresh` warnings.
+- Earlier shared QA notes report that the full-app Compose run and Django unit/integration and frontend tests passed. Those notes did not include the run IDs, exact revisions, commands, or result counts, so they are attributed reports rather than independently traceable results here.
+
+The newer QA update supplied no run URL/ID, exact revision, or test environment; it also did not name the frontend lint command. These are attributed reports, not verification performed for this documentation update.
+
+These reports do not establish Cloudflare compatibility or a live deployment. See the dated evidence in [`ai-development-workflow.md`](ai-development-workflow.md).
 
 ## Transitional code and planned deployment
 
 The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. The earlier FastAPI app under [`backend/app/`](../backend/app/) uses a seeded process-local store. It is transitional, and FastAPI/Uvicorn dependencies remain in [`pyproject.toml`](../pyproject.toml). Django under `backend/config/` is the documented API launch path and uses PostgreSQL; the legacy store is not its persistence layer.
 
-Cloudflare Workers for the frontend/API and a managed PostgreSQL connection through Hyperdrive remain a **planned deployment direction, not a verified deployment**. The existing Vite config uses `@lovable.dev/vite-tanstack-config` and documents Nitro's default Cloudflare build target. That is the current frontend build integration, not proof of publication. There are no tracked Wrangler files, API Worker adapter, Hyperdrive binding, or CI deployment workflow. Django currently exposes ordinary WSGI/ASGI entry points and reads PostgreSQL configuration directly from environment variables.
+Cloudflare Workers for the frontend/API and a managed PostgreSQL connection through Hyperdrive are a **configured proof of concept, still unverified at runtime**. The current working tree contains a frontend Wrangler config, an isolated Python Worker adapter and Hyperdrive binding, and the conditional deployment workflow. The workflow requires successful CI on `main`, `CLOUDFLARE_DEPLOY_ENABLED=true`, and account-specific secrets/variables before deployment. It performs HTTP checks of the API health route and frontend root after deployment. No Cloudflare account credentials were available or used for this work; the workflow has not run and no live Worker, managed database, deployed smoke check, or real journal journey is verified. Python Worker package/driver compatibility, PostgreSQL transactions and locking, and Hyperdrive TLS behavior remain proof-of-concept gates. See the [CI/CD and Cloudflare deployment status](cicd.md) for configuration requirements and release checks.
 
 The deployment notes in [`private-deployment.md`](private-deployment.md) describe private access, production configuration, and backup/restore preparation. Remaining work includes verifying Python Worker/package and PostgreSQL driver compatibility, configuring the deployment and Hyperdrive binding, validating current platform limits, provisioning access/secrets/backups, and recording staged smoke and restore checks. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No quota estimate, successful release, managed database, or deployed environment is asserted here.
+
+## Observability
+
+When `OTEL_EXPORTER_OTLP_ENDPOINT` is configured, Django exports request traces, HTTP request metrics, and privacy-safe workflow logs over OTLP. Resource attributes identify the service, environment, and `APP_VERSION`. Successful account and journal milestones plus safe failure outcomes increment the low-cardinality `journal.workflow.events` counter. Report generation has an explicit span. Raw URL paths and query strings are replaced before server spans are exported; telemetry excludes user IDs, usernames, review text, prompts, provider payloads, access tokens, and authorization headers.
+
+The separate [`observability/`](../observability/) Compose project contains the OpenTelemetry Collector, Prometheus, Loki, Tempo, and Grafana. Its provisioned dashboard shows weekly workflow events, request latency, correlated logs, and traces, filterable by environment and version. This is a local telemetry UI artifact; no remote collector or deployed dashboard is configured. Start the application Compose project first so it creates the shared telemetry network, then start the observability project. See [`observability.md`](observability.md) for exact steps and the privacy boundary.

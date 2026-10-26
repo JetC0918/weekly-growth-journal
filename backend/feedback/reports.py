@@ -4,7 +4,9 @@ from collections.abc import Mapping
 from typing import Any
 from uuid import uuid4
 
+from django.conf import settings
 from django.utils import timezone
+from opentelemetry import trace
 
 from .follow_ups import ReportProvider, ReportProviderError, get_report_provider
 
@@ -127,7 +129,14 @@ def generate_report_data(
         raise InsufficientReflectionContent()
 
     context = {"currentReview": current_context, "earlierReviews": history_context}
-    raw_report = (provider or get_report_provider()).generate_report(context)
+    with trace.get_tracer(__name__).start_as_current_span("feedback.report.generate") as span:
+        span.set_attribute("ai.provider.mode", settings.AI_PROVIDER_MODE)
+        try:
+            raw_report = (provider or get_report_provider()).generate_report(context)
+        except Exception:
+            span.set_attribute("ai.result", "failed")
+            raise
+        span.set_attribute("ai.result", "success")
     return _validate_provider_report(raw_report, current_context, history_context)
 
 

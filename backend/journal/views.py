@@ -20,6 +20,7 @@ from backend.feedback.reports import (
     generate_report_data,
     merge_user_edits,
 )
+from backend.config.telemetry import record_workflow_event
 
 from .models import Commitment, FeedbackReport, Review
 from .serializers import (
@@ -106,6 +107,7 @@ class ReviewListCreateView(JournalView):
                     review = existing
         except IntegrityError:
             return _bad_request("A review already exists for this week")
+        record_workflow_event("review.saved")
         return self.json_response(review, ReviewSerializer, status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
@@ -140,9 +142,12 @@ class FollowUpSuggestionsView(JournalView):
         try:
             questions = suggest_follow_up_questions(payload)
         except ProviderNotConfigured as error:
+            record_workflow_event("ai.follow_up", "not_configured")
             return Response({"detail": error.detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except FollowUpProviderError as error:
+            record_workflow_event("ai.follow_up", "failed")
             return Response({"detail": error.detail}, status=status.HTTP_502_BAD_GATEWAY)
+        record_workflow_event("ai.follow_up")
         return Response(questions)
 
 
@@ -163,10 +168,13 @@ class CompleteReviewView(JournalView):
         try:
             report_data = generate_report_data(review, history)
         except InsufficientReflectionContent as error:
+            record_workflow_event("review.completed", "insufficient_content")
             return Response({"detail": error.detail}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
         except ReportProviderNotConfigured as error:
+            record_workflow_event("review.completed", "provider_not_configured")
             return Response({"detail": error.detail}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ReportProviderError as error:
+            record_workflow_event("review.completed", "provider_failed")
             return Response({"detail": error.detail}, status=status.HTTP_502_BAD_GATEWAY)
 
         try:
@@ -181,10 +189,12 @@ class CompleteReviewView(JournalView):
                 locked_review.status = Review.Status.COMPLETED
                 locked_review.save()
         except DatabaseError:
+            record_workflow_event("review.completed", "persistence_failed")
             return Response(
                 {"detail": ReportProviderError.detail},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
+        record_workflow_event("review.completed")
         return self.json_response(report, ReportSerializer)
 
 
@@ -218,6 +228,7 @@ class InsightUpdateView(JournalView):
         match.update(changes)
         setattr(report, section, insights)
         report.save(update_fields=(section,))
+        record_workflow_event("insight.updated")
         return self.json_response(report, ReportSerializer)
 
 
@@ -242,6 +253,7 @@ class ReviewCommitmentView(JournalView):
             review=review,
             defaults={"text": text, "measure": payload["measure"].strip()},
         )
+        record_workflow_event("commitment.saved")
         return self.json_response(commitment, CommitmentSerializer)
 
 
@@ -262,4 +274,5 @@ class CommitmentBeforeView(JournalView):
 class DeleteAllDataView(JournalView):
     def delete(self, request):
         Review.objects.filter(user=request.user).delete()
+        record_workflow_event("journal.deleted")
         return Response(status=status.HTTP_204_NO_CONTENT)

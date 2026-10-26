@@ -37,11 +37,18 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
       AI_API_KEY: ${AI_API_KEY:-}
+      APP_VERSION: ${APP_VERSION:-local}
+      OTEL_SERVICE_NAME: weekly-growth-journal-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SEMCONV_STABILITY_OPT_IN: http
     depends_on:
       db:
         condition: service_healthy
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    networks:
+      - default
+      - telemetry
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=3)"]
       interval: 10s
@@ -74,3 +81,7 @@ services:
 volumes:
   postgres_data:
     name: weekly_growth_journal_postgres_data
+
+networks:
+  telemetry:
+    name: weekly-growth-journal_telemetry

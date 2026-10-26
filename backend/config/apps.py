@@ -7,3 +7,6 @@ class ConfigConfig(AppConfig):
 
     def ready(self):
         from . import checks  # noqa: F401
+        from .telemetry import configure_telemetry
+
+        configure_telemetry()

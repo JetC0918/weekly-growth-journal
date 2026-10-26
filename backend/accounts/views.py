@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from backend.config.telemetry import record_workflow_event
+
 from .serializers import CredentialsSerializer
 from .tokens import create_access_token
 
@@ -42,6 +44,7 @@ class RegisterView(PublicAuthView):
                 status=status.HTTP_409_CONFLICT,
             )
 
+        record_workflow_event("account.registered")
         return Response(
             {
                 "accessToken": create_access_token(user.pk),
@@ -63,6 +66,7 @@ class LoginView(PublicAuthView):
         ).first()
 
         if user is None or not user.check_password(credentials["password"]):
+            record_workflow_event("account.login", "rejected")
             response = Response(
                 {"detail": "Incorrect username or password"},
                 status=status.HTTP_401_UNAUTHORIZED,
@@ -70,6 +74,7 @@ class LoginView(PublicAuthView):
             response["WWW-Authenticate"] = "Bearer"
             return response
 
+        record_workflow_event("account.login")
         return Response(
             {
                 "accessToken": create_access_token(user.pk),

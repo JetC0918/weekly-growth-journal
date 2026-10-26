@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Weekly Growth Journal
+    orgId: 1
+    folder: Weekly Growth Journal
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards
