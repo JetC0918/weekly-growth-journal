@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Test and tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.uv-cache/
+.qa-uv-cache/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Local databases and logs
+*.sqlite3
+*.sqlite3-journal
+*.db
+*.log
+
+# Generated frontend files
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+.nitro/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -13,19 +13,33 @@ import {
   services,
   weekStartOf,
   type PreviousActionCheck,
+  type Commitment,
+  type Review,
   type SaveReviewInput,
 } from "@/services";
 import { commitmentBeforeQuery, weekReviewQuery } from "@/services/queries";
+import { requireAuthenticated } from "@/lib/require-auth";
+import { PageLoading } from "@/components/page-loading";
 
 export const Route = createFileRoute("/review")({
   ssr: false,
-  validateSearch: z.object({ week: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() }),
+  beforeLoad: requireAuthenticated,
+  pendingComponent: PageLoading,
+  validateSearch: z.object({
+    week: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Weekly — Reflect on your week" },
       { name: "description", content: "Answer five short prompts and reflect on your week." },
       { property: "og:title", content: "Weekly — Reflect on your week" },
-      { property: "og:description", content: "Five prompts, free writing, and optional follow-up questions." },
+      {
+        property: "og:description",
+        content: "Five prompts, free writing, and optional follow-up questions.",
+      },
     ],
   }),
   loaderDeps: ({ search }) => ({ week: search.week ?? weekStartOf() }),
@@ -41,8 +55,29 @@ function ReviewPage() {
   const { week = weekStartOf() } = Route.useSearch();
   const { data: existing } = useSuspenseQuery(weekReviewQuery(week));
   const { data: prev } = useSuspenseQuery(commitmentBeforeQuery(week));
-  const qc = useQueryClient();
   const navigate = useNavigate();
+  return (
+    <ReviewEditor
+      week={week}
+      existing={existing}
+      previousCommitment={prev}
+      onCompleted={(id) => navigate({ to: "/report/$reviewId", params: { reviewId: id } })}
+    />
+  );
+}
+
+export function ReviewEditor({
+  week,
+  existing,
+  previousCommitment: prev,
+  onCompleted,
+}: {
+  week: string;
+  existing: Review | null;
+  previousCommitment: Commitment | null;
+  onCompleted: (id: string) => void;
+}) {
+  const qc = useQueryClient();
 
   const [answers, setAnswers] = useState(existing?.answers ?? emptyAnswers());
   const [freeWriting, setFree] = useState(existing?.freeWriting ?? "");
@@ -52,6 +87,7 @@ function ReviewPage() {
       (prev ? { commitmentId: prev.id, attempted: "", whatHappened: "", learned: "" } : undefined),
   );
   const [busy, setBusy] = useState<"" | "save" | "ask" | "finish">("");
+  const isCompleted = existing?.status === "completed";
 
   const input = (): SaveReviewInput => ({
     id: existing?.id,
@@ -72,14 +108,20 @@ function ReviewPage() {
   return (
     <div className="space-y-8 pt-4">
       <div>
-        <p className="text-sm uppercase tracking-widest text-muted-foreground">{formatWeek(week)}</p>
+        <p className="text-sm uppercase tracking-widest text-muted-foreground">
+          {formatWeek(week)}
+        </p>
         <h1 className="mt-2 text-4xl font-semibold">Weekly reflection</h1>
-        <p className="mt-2 text-muted-foreground">Short answers are fine. Skip anything that doesn't apply.</p>
+        <p className="mt-2 text-muted-foreground">
+          Short answers are fine. Skip anything that doesn't apply.
+        </p>
       </div>
 
       {prev && pa && (
         <section className="space-y-4 rounded-xl border border-accent/40 bg-card p-6 shadow-soft">
-          <p className="text-xs font-semibold uppercase tracking-widest text-accent">Last week you committed to</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+            Last week you committed to
+          </p>
           <p className="font-serif text-xl">{prev.text}</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Did you attempt it?">
             {(["yes", "partly", "no"] as const).map((v) => (
@@ -95,8 +137,18 @@ function ReviewPage() {
               </Button>
             ))}
           </div>
-          <Field label="What happened?" value={pa.whatHappened} onChange={(v) => setPa({ ...pa, whatHappened: v })} rows={2} />
-          <Field label="What did you learn from it?" value={pa.learned} onChange={(v) => setPa({ ...pa, learned: v })} rows={2} />
+          <Field
+            label="What happened?"
+            value={pa.whatHappened}
+            onChange={(v) => setPa({ ...pa, whatHappened: v })}
+            rows={2}
+          />
+          <Field
+            label="What did you learn from it?"
+            value={pa.learned}
+            onChange={(v) => setPa({ ...pa, learned: v })}
+            rows={2}
+          />
         </section>
       )}
 
@@ -121,17 +173,27 @@ function ReviewPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-xl">Go deeper</h2>
-            <p className="text-sm text-muted-foreground">Optional AI follow-up questions based on what you wrote.</p>
+            <p className="text-sm text-muted-foreground">
+              Optional AI follow-up questions based on what you wrote.
+            </p>
           </div>
           <Button
             variant="outline"
             disabled={busy !== "" || !hasContent}
             onClick={async () => {
               setBusy("ask");
-              const qs = await services.suggestFollowUps(input());
-              const known = new Set(followUps.map((f) => f.question));
-              setFollowUps([...followUps, ...qs.filter((q) => !known.has(q)).map((question) => ({ question, answer: "" }))]);
-              setBusy("");
+              try {
+                const qs = await services.suggestFollowUps(input());
+                const known = new Set(followUps.map((f) => f.question));
+                setFollowUps([
+                  ...followUps,
+                  ...qs.filter((q) => !known.has(q)).map((question) => ({ question, answer: "" })),
+                ]);
+              } catch {
+                toast.error("We couldn't get follow-up questions. Your reflection is still here.");
+              } finally {
+                setBusy("");
+              }
             }}
           >
             {busy === "ask" ? "Thinking…" : "Ask me questions"}
@@ -143,7 +205,9 @@ function ReviewPage() {
             label={f.question}
             value={f.answer}
             rows={2}
-            onChange={(v) => setFollowUps(followUps.map((x, j) => (j === i ? { ...x, answer: v } : x)))}
+            onChange={(v) =>
+              setFollowUps(followUps.map((x, j) => (j === i ? { ...x, answer: v } : x)))
+            }
           />
         ))}
       </section>
@@ -154,13 +218,27 @@ function ReviewPage() {
           disabled={busy !== "" || !hasContent}
           onClick={async () => {
             setBusy("finish");
-            const r = await save();
-            await services.completeReview(r.id);
-            qc.invalidateQueries();
-            navigate({ to: "/report/$reviewId", params: { reviewId: r.id } });
+            try {
+              const r = await save();
+              await services.completeReview(r.id);
+              await qc.invalidateQueries();
+              onCompleted(r.id);
+            } catch {
+              toast.error(
+                "We couldn't complete your review. Your answers are still here; please try again.",
+              );
+            } finally {
+              setBusy("");
+            }
           }}
         >
-          {busy === "finish" ? "Preparing feedback…" : "Finish & get feedback"}
+          {busy === "finish"
+            ? isCompleted
+              ? "Refreshing feedback…"
+              : "Preparing feedback…"
+            : isCompleted
+              ? "Refresh feedback"
+              : "Finish & get feedback"}
         </Button>
         <Button
           size="lg"
@@ -168,12 +246,21 @@ function ReviewPage() {
           disabled={busy !== ""}
           onClick={async () => {
             setBusy("save");
-            await save();
-            setBusy("");
-            toast.success("Draft saved");
+            try {
+              await save();
+              toast.success(
+                isCompleted ? "Changes saved; feedback was not refreshed" : "Draft saved",
+              );
+            } catch {
+              toast.error(
+                "Your draft couldn't be saved. Your answers are still here; please try again.",
+              );
+            } finally {
+              setBusy("");
+            }
           }}
         >
-          Save draft
+          {isCompleted ? "Save changes without refreshing feedback" : "Save draft"}
         </Button>
       </div>
     </div>
@@ -197,7 +284,13 @@ function Field({
       <Label htmlFor={id} className="text-base font-medium">
         {label}
       </Label>
-      <Textarea id={id} rows={rows} value={value} onChange={(e) => onChange(e.target.value)} className="bg-card" />
+      <Textarea
+        id={id}
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-card"
+      />
     </div>
   );
 }

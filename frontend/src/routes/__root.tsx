@@ -8,11 +8,13 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { services } from "@/services";
+import { handleSessionTransition } from "@/lib/session-cache";
 
 function NotFoundComponent() {
   return (
@@ -117,6 +119,35 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const session = useSyncExternalStore(
+    services.auth.subscribe,
+    services.auth.getSnapshot,
+    services.auth.getSnapshot,
+  );
+  const previousSession = useRef(session);
+
+  useEffect(() => {
+    const previous = previousSession.current;
+    previousSession.current = session;
+    handleSessionTransition(
+      queryClient,
+      previous,
+      session,
+      router.state.location.pathname,
+      () => void router.navigate({ to: "/account" }),
+    );
+  }, [queryClient, router, session]);
+
+  useEffect(() => {
+    const refreshSession = () => services.auth.refreshSession();
+    window.addEventListener("focus", refreshSession);
+    document.addEventListener("visibilitychange", refreshSession);
+    return () => {
+      window.removeEventListener("focus", refreshSession);
+      document.removeEventListener("visibilitychange", refreshSession);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -126,7 +157,11 @@ function RootComponent() {
             Weekly
           </Link>
           <nav className="flex gap-5 text-sm text-muted-foreground">
-            <Link to="/" activeOptions={{ exact: true }} activeProps={{ className: "text-foreground font-medium" }}>
+            <Link
+              to="/"
+              activeOptions={{ exact: true }}
+              activeProps={{ className: "text-foreground font-medium" }}
+            >
               Home
             </Link>
             <Link to="/review" activeProps={{ className: "text-foreground font-medium" }}>
@@ -134,6 +169,9 @@ function RootComponent() {
             </Link>
             <Link to="/history" activeProps={{ className: "text-foreground font-medium" }}>
               History
+            </Link>
+            <Link to="/account" activeProps={{ className: "text-foreground font-medium" }}>
+              Account
             </Link>
           </nav>
         </header>

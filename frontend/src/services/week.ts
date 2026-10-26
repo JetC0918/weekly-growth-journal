@@ -8,6 +8,12 @@ export function weekStartOf(date: Date = new Date()): string {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+/** Monday of the week immediately after the supplied review week. */
+export function nextWeekStart(weekStart: string): string {
+  const [year = 1970, month = 1, day = 1] = weekStart.split("-").map(Number);
+  return weekStartOf(new Date(year, month - 1, day + 7));
+}
+
 export function formatWeek(weekStart: string): string {
   const [y = 1970, m = 1, d = 1] = weekStart.split("-").map(Number);
   const start = new Date(y, m - 1, d);

@@ -1,0 +1,682 @@
+openapi: 3.1.0
+info:
+  title: Weekly Growth Journal API
+  version: 1.0.0
+  description: >-
+    HTTP contract for the backend expected by the frontend GrowthService
+    interface. The frontend currently uses a local mock and does not define
+    HTTP paths; the paths below are a REST mapping of that interface. Journal
+    data operations require a bearer token.
+security:
+  - BearerAuth: []
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+paths:
+  /auth/register:
+    post:
+      operationId: register
+      summary: Create an account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '201':
+          description: Account created and authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /auth/login:
+    post:
+      operationId: login
+      summary: Exchange credentials for a bearer token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Credentials accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /reviews:
+    get:
+      operationId: listReviews
+      summary: List reviews
+      description: Returns reviews ordered by weekStart descending.
+      responses:
+        '200':
+          description: Reviews found.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: saveReview
+      summary: Create or update a review
+      description: >-
+        Creates a draft review, or updates the existing review matching the
+        supplied id or weekStart. Existing identifiers and createdAt values are
+        retained when updating. A new review receives a generated id, draft
+        status, and timestamps.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveReviewInput'
+      responses:
+        '200':
+          description: Existing review updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '201':
+          description: New draft review created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/by-week/{weekStart}:
+    get:
+      operationId: getReviewForWeek
+      summary: Get the review for a week
+      parameters:
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday of the reviewed week.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Review found, or null if no review exists for the week.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Review'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/{reviewId}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      operationId: getReview
+      summary: Get a review
+      responses:
+        '200':
+          description: Review found, or null if it does not exist.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Review'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      operationId: deleteReview
+      summary: Delete a review and related data
+      description: Also deletes the review's report and commitment.
+      responses:
+        '204':
+          description: Review and related data deleted. Succeeds if already absent.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/suggest-follow-ups:
+    post:
+      operationId: suggestFollowUps
+      summary: Generate follow-up questions for a review draft
+      description: >-
+        Sends non-empty draft reflection content to the configured server-side
+        OpenAI-compatible provider. Returns an empty array for a draft with no
+        answers or follow-up responses. Provider credentials are never returned
+        to the caller.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveReviewInput'
+      responses:
+        '200':
+          description: Suggested questions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /reviews/{reviewId}/complete:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    post:
+      operationId: completeReview
+      summary: Complete a review and generate its report
+      description: >-
+        Generates a report from this review and up to five of this user's most
+        recent earlier completed reviews. Every insight must cite exact evidence
+        from that context. On successful regeneration, prior user-edited insights
+        are retained by section and evidence, including their IDs, text, kind,
+        evidence, status, and correction; edits without a generated match remain
+        in the report, and duplicate generated copies are omitted. New insights
+        receive fresh IDs and pending status. The review is marked completed and
+        its report is stored only after provider output has been validated.
+        Regeneration does not modify the review's saved commitment.
+      responses:
+        '200':
+          description: Generated report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InsufficientEvidence'
+        '502':
+          $ref: '#/components/responses/ProviderFailure'
+        '503':
+          $ref: '#/components/responses/ProviderUnavailable'
+
+  /reviews/{reviewId}/report:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      operationId: getReport
+      summary: Get a review report
+      responses:
+        '200':
+          description: Report found, or null if no report has been generated.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Report'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/{reviewId}/report/{section}/insights/{insightId}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+      - name: section
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/ReportSection'
+      - name: insightId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      operationId: updateInsight
+      summary: Update the user's status or correction for one insight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InsightPatch'
+      responses:
+        '200':
+          description: Updated report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reviews/{reviewId}/commitment:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      operationId: getCommitment
+      summary: Get a review's commitment
+      responses:
+        '200':
+          description: Commitment found, or null if none exists.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Commitment'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: setCommitment
+      summary: Create or replace a review's commitment
+      description: Replaces the existing commitment for this review, if present.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommitmentInput'
+      responses:
+        '200':
+          description: Created or updated commitment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Commitment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /commitments/before:
+    get:
+      operationId: getCommitmentBefore
+      summary: Get the most recent earlier commitment
+      description: Returns the commitment with the latest weekStart strictly before the requested week.
+      parameters:
+        - name: weekStart
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Earlier commitment found, or null if none exists.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Commitment'
+                  - type: 'null'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /data:
+    delete:
+      operationId: deleteAllData
+      summary: Delete all journal data
+      description: Permanently deletes all reviews, reports, and commitments for the current data store.
+      responses:
+        '204':
+          description: All journal data deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  parameters:
+    ReviewId:
+      name: reviewId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    Answers:
+      type: object
+      additionalProperties: false
+      required:
+        - wentWell
+        - didntGoWell
+        - handledBetter
+        - learned
+        - doDifferently
+      properties:
+        wentWell:
+          type: string
+        didntGoWell:
+          type: string
+        handledBetter:
+          type: string
+        learned:
+          type: string
+        doDifferently:
+          type: string
+
+    FollowUp:
+      type: object
+      additionalProperties: false
+      required: [question, answer]
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+
+    PreviousActionCheck:
+      type: object
+      additionalProperties: false
+      required: [commitmentId, attempted, whatHappened, learned]
+      properties:
+        commitmentId:
+          type: string
+        attempted:
+          type: string
+          enum: [yes, partly, no, '']
+        whatHappened:
+          type: string
+        learned:
+          type: string
+
+    SaveReviewInput:
+      type: object
+      additionalProperties: false
+      required: [weekStart, answers, freeWriting, followUps]
+      properties:
+        id:
+          type: string
+          description: Optional review id; if omitted, an existing review may be matched by weekStart.
+        weekStart:
+          type: string
+          format: date
+          description: Monday of the reviewed week.
+        answers:
+          $ref: '#/components/schemas/Answers'
+        freeWriting:
+          type: string
+        followUps:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUp'
+        previousAction:
+          oneOf:
+            - $ref: '#/components/schemas/PreviousActionCheck'
+            - type: 'null'
+
+    Review:
+      allOf:
+        - $ref: '#/components/schemas/SaveReviewInput'
+        - type: object
+          required: [id, status, createdAt, updatedAt]
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+              enum: [draft, completed]
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    Insight:
+      type: object
+      additionalProperties: false
+      required: [id, text, kind, evidence, status]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        kind:
+          type: string
+          enum: [observation, hypothesis]
+        evidence:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        correction:
+          type: string
+
+    ReportSection:
+      type: string
+      enum: [takeaways, strengths, challenges, patterns]
+
+    InsightPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        correction:
+          type: string
+
+    Report:
+      type: object
+      additionalProperties: false
+      required: [id, reviewId, takeaways, strengths, challenges, patterns, proposedAction, generatedAt]
+      properties:
+        id:
+          type: string
+        reviewId:
+          type: string
+        takeaways:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        strengths:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        challenges:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        patterns:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insight'
+        proposedAction:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+
+    CommitmentInput:
+      type: object
+      additionalProperties: false
+      required: [text, measure]
+      properties:
+        text:
+          type: string
+          minLength: 1
+        measure:
+          type: string
+
+    Commitment:
+      type: object
+      additionalProperties: false
+      required: [id, reviewId, weekStart, text, measure, createdAt]
+      properties:
+        id:
+          type: string
+        reviewId:
+          type: string
+        weekStart:
+          type: string
+          format: date
+        text:
+          type: string
+        measure:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+      required: [detail]
+
+    Credentials:
+      type: object
+      additionalProperties: false
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+        password:
+          type: string
+          minLength: 8
+          maxLength: 200
+
+    AuthToken:
+      type: object
+      additionalProperties: false
+      required: [accessToken, tokenType]
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum: [bearer]
+
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationErrorDetail'
+    ValidationErrorDetail:
+      type: object
+      required: [loc, msg, type]
+      properties:
+        loc:
+          type: array
+          items:
+            anyOf:
+              - type: string
+              - type: integer
+        msg:
+          type: string
+        type:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Request body or parameters are invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The referenced review, report, or insight does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: >-
+        Invalid login credentials return `detail: Incorrect username or password`.
+        Protected operations return `detail: Bearer token required` for missing
+        or malformed bearer credentials and `detail: Invalid or expired bearer
+        token` for invalid, expired, or unknown-user tokens. These responses
+        include a Bearer challenge.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      headers:
+        WWW-Authenticate:
+          description: Bearer authentication challenge.
+          schema:
+            type: string
+          example: Bearer
+    Conflict:
+      description: The username is already registered.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: FastAPI request validation failed before the operation ran.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+    ProviderFailure:
+      description: >-
+        The configured provider timed out, could not be reached, returned a
+        non-success response, or returned output that could not be used or
+        validated. Persistence failures also return a safe error and roll back
+        report and review-state changes. The response excludes provider
+        credentials, reflection text, raw provider output, and internal details.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ProviderUnavailable:
+      description: >-
+        Provider configuration is incomplete, including when AI_API_KEY is
+        empty. Configure AI_BASE_URL, AI_MODEL, and AI_API_KEY on the server.
+        No provider request is made for this response.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InsufficientEvidence:
+      description: >-
+        The current review has no non-blank answer, free-writing entry, or
+        follow-up answer. No provider request is made and the review remains
+        editable.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: SignedToken
+      description: Signed bearer access tokens expire 24 hours after they are issued.

@@ -1,15 +1,19 @@
 import type { GrowthService } from "./api";
-import { createMockService, memoryStore } from "./mock/mockService";
+import { createAuthService, type AuthService } from "./auth";
+import { createHttpService } from "./httpService";
 
-/**
- * The app-wide service instance. Swap the mock for a real implementation
- * of GrowthService here — nothing else in the UI needs to change.
- */
-export const services: GrowthService = createMockService(
-  typeof window !== "undefined" ? window.localStorage : memoryStore(),
-  { latencyMs: 150 },
+const auth = createAuthService();
+
+/** The app-wide API client; all journal requests share the volatile auth session. */
+export const services: GrowthService & { auth: AuthService } = Object.assign(
+  createHttpService(auth),
+  { auth },
 );
 
 export type { GrowthService } from "./api";
+export { ApiError, createHttpService } from "./httpService";
+export type { HttpServiceOptions } from "./httpService";
+export { AuthRequestError, SESSION_LIFETIME_MS } from "./auth";
+export type { AuthCredentials, AuthService, AccountSessionSnapshot } from "./auth";
 export * from "./types";
 export * from "./week";

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as ReviewRouteImport } from './routes/review'
 import { Route as ReportReviewIdRouteImport } from './routes/report.$reviewId'
@@ -17,6 +18,11 @@ import { Route as ReportReviewIdRouteImport } from './routes/report.$reviewId'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -37,12 +43,14 @@ const ReportReviewIdRoute = ReportReviewIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
   '/review': typeof ReviewRoute
   '/report/$reviewId': typeof ReportReviewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
   '/review': typeof ReviewRoute
   '/report/$reviewId': typeof ReportReviewIdRoute
@@ -50,20 +58,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/history': typeof HistoryRoute
   '/review': typeof ReviewRoute
   '/report/$reviewId': typeof ReportReviewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/review' | '/report/$reviewId'
+  fullPaths: '/' | '/account' | '/history' | '/review' | '/report/$reviewId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/review' | '/report/$reviewId'
-  id: '__root__' | '/' | '/history' | '/review' | '/report/$reviewId'
+  to: '/' | '/account' | '/history' | '/review' | '/report/$reviewId'
+  id:
+    '__root__' | '/' | '/account' | '/history' | '/review' | '/report/$reviewId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   HistoryRoute: typeof HistoryRoute
   ReviewRoute: typeof ReviewRoute
   ReportReviewIdRoute: typeof ReportReviewIdRoute
@@ -76,6 +87,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -104,6 +122,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   HistoryRoute: HistoryRoute,
   ReviewRoute: ReviewRoute,
   ReportReviewIdRoute: ReportReviewIdRoute,

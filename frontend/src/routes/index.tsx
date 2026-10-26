@@ -2,16 +2,26 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { formatWeek, weekStartOf } from "@/services";
+import { requireAuthenticated } from "@/lib/require-auth";
+import { PageLoading } from "@/components/page-loading";
 import { commitmentBeforeQuery, reviewsQuery, weekReviewQuery } from "@/services/queries";
 
 export const Route = createFileRoute("/")({
   ssr: false,
+  beforeLoad: requireAuthenticated,
+  pendingComponent: PageLoading,
   head: () => ({
     meta: [
       { title: "Weekly — Your growth this week" },
-      { name: "description", content: "See this week's review status and your current improvement commitment." },
+      {
+        name: "description",
+        content: "See this week's review status and your current improvement commitment.",
+      },
       { property: "og:title", content: "Weekly — Your growth this week" },
-      { property: "og:description", content: "A private weekly reflection and feedback companion." },
+      {
+        property: "og:description",
+        content: "A private weekly reflection and feedback companion.",
+      },
     ],
   }),
   loader: ({ context: { queryClient } }) => {
@@ -37,7 +47,11 @@ function Home() {
   const { data: commitment } = useSuspenseQuery(commitmentBeforeQuery(nextWeek()));
   const { data: reviews } = useSuspenseQuery(reviewsQuery());
   const past = reviews.filter((r) => r.weekStart !== w).slice(0, 4);
-  const status = !current ? "Not started" : current.status === "draft" ? "In progress" : "Completed";
+  const status = !current
+    ? "Not started"
+    : current.status === "draft"
+      ? "In progress"
+      : "Completed";
 
   return (
     <div className="space-y-10">
@@ -49,24 +63,36 @@ function Home() {
         <div className="mt-8 flex flex-wrap items-center gap-4">
           {current?.status === "completed" ? (
             <Button asChild size="lg">
-              <Link to="/report/$reviewId" params={{ reviewId: current.id }}>View this week's feedback</Link>
+              <Link to="/report/$reviewId" params={{ reviewId: current.id }}>
+                View this week's feedback
+              </Link>
             </Button>
           ) : (
             <Button asChild size="lg">
-              <Link to="/review">{current ? "Continue your review" : "Start this week's review"}</Link>
+              <Link to="/review">
+                {current ? "Continue your review" : "Start this week's review"}
+              </Link>
             </Button>
           )}
-          <span className="rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground">{status}</span>
+          <span className="rounded-full bg-secondary px-3 py-1 text-sm text-secondary-foreground">
+            {status}
+          </span>
         </div>
       </section>
 
       <section className="rounded-xl border bg-card p-6 shadow-soft">
-        <p className="text-xs font-semibold uppercase tracking-widest text-accent">{commitment?.weekStart === w ? "Your commitment for next week" : "Your commitment this week"}</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-accent">
+          {commitment?.weekStart === w
+            ? "Your commitment for next week"
+            : "Your commitment this week"}
+        </p>
         {commitment ? (
           <>
             <p className="mt-3 font-serif text-2xl">{commitment.text}</p>
             {commitment.measure && (
-              <p className="mt-2 text-sm text-muted-foreground">How you'll know: {commitment.measure}</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                How you'll know: {commitment.measure}
+              </p>
             )}
           </>
         ) : (
@@ -96,7 +122,9 @@ function Home() {
                   className="flex justify-between px-5 py-4 hover:bg-muted"
                 >
                   <span>{formatWeek(r.weekStart)}</span>
-                  <span className="text-sm text-muted-foreground">{r.status === "completed" ? "Completed" : "Draft"}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {r.status === "completed" ? "Completed" : "Draft"}
+                  </span>
                 </Link>
               </li>
             ))}
