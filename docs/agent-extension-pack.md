@@ -4,7 +4,7 @@ This pack is a small, local-first reference implementation for AI-assisted
 changes in this repository. Its boundaries are documented; it does not grant
 additional access or imply that an agent runner is installed.
 
-| Rubric component | Artifact | Purpose |
+| Area | Artifact | Purpose |
 | --- | --- | --- |
 | Project instructions | [`../AGENTS.md`](../AGENTS.md) | Commands, documentation, and dependency rules. |
 | Reusable capability/workflow | [`../agent-capabilities/openapi-contract-review.md`](../agent-capabilities/openapi-contract-review.md) | Repeatable contract-to-client-to-backend review. |

@@ -18,7 +18,7 @@ manual review, not proof that the application is vulnerability-free.
 
 The CI workflow does not run dependency advisory scans. A temporary audit job
 was removed after QA found that `bun audit` failed on 25 existing frontend
-advisories; dependencies were not changed as part of the CI rubric work. The
+advisories; dependencies were not changed as part of the CI setup work. The
 Python package scan used locally,
 `uv run --all-extras --with pip-audit pip-audit`, initially reported the
 optional development dependency `pytest 8.4.2` as affected by `PYSEC-2026-1845`, fixed in

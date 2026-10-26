@@ -64,7 +64,7 @@ These remain dependency maintenance items; **25 entries do not mean 25 exploitab
 
 | Control | Direct observation |
 | --- | --- |
-| Remote scope | Main and `codex/rubric-readiness` listed; no open PRs or releases. Main matched the local audited revision. |
+| Remote scope | Main and a prior readiness branch listed; no open PRs or releases. Main matched the local audited revision. |
 | Main branch | `protected:false`, empty rulesets; authenticated CLI protection read returned `Branch not protected`. |
 | Latest CI | Run 40280045096 succeeded; frontend advisory command exited 1 under continue-on-error. Unit/integration/frontend/container jobs succeeded on the baseline only. |
 | Latest deployment | [Run 40280133581](https://github.com/JetC0918/weekly-growth-journal/actions/runs/40280133581) skipped. The repository deployment-enable variable was absent. |

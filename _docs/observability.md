@@ -63,7 +63,7 @@ reflection text, AI prompts/responses, provider errors, or authorization
 headers. Do not add those fields to spans or logs. The workflow metric uses
 bounded labels and does not identify individual accounts.
 
-This setup is for local development and rubric demonstration. It has no remote
+This setup is for local development and demonstration. It has no remote
 authentication, TLS, backups, alert routing, or production retention controls.
 Keep it on a trusted machine. For deployment, use an authenticated OTel-compatible
 backend and decide privacy-safe retention before enabling exports.
