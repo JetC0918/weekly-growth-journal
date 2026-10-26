@@ -244,6 +244,30 @@ paths:
         '503':
           $ref: '#/components/responses/ProviderUnavailable'
 
+  /reviews/{reviewId}/complete-without-feedback:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    post:
+      operationId: completeReviewWithoutFeedback
+      summary: Complete a review without generating AI feedback
+      description: >-
+        Marks a review complete after confirming it contains at least one
+        non-blank answer, free-writing entry, or follow-up answer. This operation
+        does not call an AI provider or create a feedback report.
+      responses:
+        '200':
+          description: Completed review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/InsufficientEvidence'
+
   /reviews/{reviewId}/report:
     parameters:
       - $ref: '#/components/parameters/ReviewId'

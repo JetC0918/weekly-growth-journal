@@ -37,7 +37,7 @@ export const Route = createFileRoute("/review")({
       { property: "og:title", content: "Weekly — Reflect on your week" },
       {
         property: "og:description",
-        content: "Five prompts, free writing, and optional follow-up questions.",
+        content: "Answer five short prompts and save your weekly reflection.",
       },
     ],
   }),
@@ -80,12 +80,12 @@ export function ReviewEditor({
 
   const [answers, setAnswers] = useState(existing?.answers ?? emptyAnswers());
   const [freeWriting, setFree] = useState(existing?.freeWriting ?? "");
-  const [followUps, setFollowUps] = useState(existing?.followUps ?? []);
+  const [followUps] = useState(existing?.followUps ?? []);
   const [pa, setPa] = useState<PreviousActionCheck | undefined>(
     existing?.previousAction ??
       (prev ? { commitmentId: prev.id, attempted: "", whatHappened: "", learned: "" } : undefined),
   );
-  const [busy, setBusy] = useState<"" | "save" | "ask" | "finish">("");
+  const [busy, setBusy] = useState<"" | "save" | "finish">("");
   const isCompleted = existing?.status === "completed";
 
   const input = (): SaveReviewInput => ({
@@ -96,7 +96,10 @@ export function ReviewEditor({
     followUps,
     previousAction: pa,
   });
-  const hasContent = Object.values(answers).some((a) => a.trim()) || freeWriting.trim();
+  const hasContent =
+    Object.values(answers).some((a) => a.trim()) ||
+    freeWriting.trim() ||
+    followUps.some((followUp) => followUp.answer.trim());
 
   const save = async () => {
     const r = await services.saveReview(input());
@@ -168,49 +171,6 @@ export function ReviewEditor({
         />
       </section>
 
-      <section className="space-y-4 rounded-xl bg-secondary p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl">Go deeper</h2>
-            <p className="text-sm text-muted-foreground">
-              Optional AI follow-up questions based on what you wrote.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            disabled={busy !== "" || !hasContent}
-            onClick={async () => {
-              setBusy("ask");
-              try {
-                const qs = await services.suggestFollowUps(input());
-                const known = new Set(followUps.map((f) => f.question));
-                setFollowUps([
-                  ...followUps,
-                  ...qs.filter((q) => !known.has(q)).map((question) => ({ question, answer: "" })),
-                ]);
-              } catch {
-                toast.error("We couldn't get follow-up questions. Your reflection is still here.");
-              } finally {
-                setBusy("");
-              }
-            }}
-          >
-            {busy === "ask" ? "Thinking…" : "Ask me questions"}
-          </Button>
-        </div>
-        {followUps.map((f, i) => (
-          <Field
-            key={f.question}
-            label={f.question}
-            value={f.answer}
-            rows={2}
-            onChange={(v) =>
-              setFollowUps(followUps.map((x, j) => (j === i ? { ...x, answer: v } : x)))
-            }
-          />
-        ))}
-      </section>
-
       <div className="flex flex-wrap gap-3">
         <Button
           size="lg"
@@ -219,7 +179,7 @@ export function ReviewEditor({
             setBusy("finish");
             try {
               const r = await save();
-              await services.completeReview(r.id);
+              await services.completeReviewWithoutFeedback(r.id);
               await qc.invalidateQueries();
               onCompleted(r.id);
             } catch {
@@ -231,13 +191,7 @@ export function ReviewEditor({
             }
           }}
         >
-          {busy === "finish"
-            ? isCompleted
-              ? "Refreshing feedback…"
-              : "Preparing feedback…"
-            : isCompleted
-              ? "Refresh feedback"
-              : "Finish & get feedback"}
+          {busy === "finish" ? "Completing…" : "Complete review"}
         </Button>
         <Button
           size="lg"
@@ -247,9 +201,7 @@ export function ReviewEditor({
             setBusy("save");
             try {
               await save();
-              toast.success(
-                isCompleted ? "Changes saved; feedback was not refreshed" : "Draft saved",
-              );
+              toast.success(isCompleted ? "Changes saved" : "Draft saved");
             } catch {
               toast.error(
                 "Your draft couldn't be saved. Your answers are still here; please try again.",
@@ -259,7 +211,7 @@ export function ReviewEditor({
             }
           }}
         >
-          {isCompleted ? "Save changes without refreshing feedback" : "Save draft"}
+          {isCompleted ? "Save changes" : "Save draft"}
         </Button>
       </div>
     </div>

@@ -90,6 +90,13 @@ review's completed status in one database transaction. The provider receives
 the current reflection and up to five most recent earlier completed reviews
 belonging to the same user.
 
+The interface's current AI-free review flow hides follow-up generation and uses
+`POST /api/reviews/{reviewId}/complete-without-feedback` to mark a non-empty
+reflection complete without a provider request or report. The completed-review
+page explains that feedback was not generated and still lets the user save a
+commitment manually. The provider-backed endpoints remain available for a later
+AI-enabled release.
+
 ## Check and test
 
 From the repository root:

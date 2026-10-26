@@ -7,13 +7,7 @@ import { DraftDeleteButton } from "@/routes/history";
 import { ReviewEditor } from "@/routes/review";
 import { Toaster } from "@/components/ui/sonner";
 import { qk } from "@/services/queries";
-import {
-  services,
-  type Commitment,
-  type Report,
-  type Review,
-  type SaveReviewInput,
-} from "@/services";
+import { services, type Commitment, type Review, type SaveReviewInput } from "@/services";
 
 const WEEK = "2025-01-06";
 
@@ -39,17 +33,6 @@ const reviewFor = (status: Review["status"] = "draft"): Review => ({
   createdAt: "2025-01-13T10:00:00Z",
   updatedAt: "2025-01-13T10:00:00Z",
 });
-
-const report: Report = {
-  id: "rep-existing",
-  reviewId: "rev-existing",
-  takeaways: [],
-  strengths: [],
-  challenges: [],
-  patterns: [],
-  proposedAction: "Ask on Monday",
-  generatedAt: "2025-01-13T10:00:00Z",
-};
 
 const priorCommitment: Commitment = {
   id: "com-prior",
@@ -137,7 +120,7 @@ describe("journal edit and deletion flows", () => {
     expect(screen.getByLabelText("Anything else on your mind? (free writing)")).toHaveValue(
       "A saved thought",
     );
-    expect(screen.getByLabelText("What helped?")).toHaveValue("A short plan");
+    expect(screen.queryByLabelText("What helped?")).not.toBeInTheDocument();
     expect(screen.getByLabelText("What happened?")).toHaveValue("I tried once");
     expect(screen.getByLabelText("What did you learn from it?")).toHaveValue("Start small");
 
@@ -148,7 +131,11 @@ describe("journal edit and deletion flows", () => {
 
     expect(await screen.findByText("Draft saved")).toBeInTheDocument();
     expect(state.saveReview).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "rev-existing", weekStart: WEEK }),
+      expect.objectContaining({
+        id: "rev-existing",
+        weekStart: WEEK,
+        followUps: [{ question: "What helped?", answer: "A short plan" }],
+      }),
     );
     const reopened = await services.getReviewForWeek(WEEK);
     const listed = await services.listReviews();
@@ -179,10 +166,10 @@ describe("journal edit and deletion flows", () => {
     expect(queryClient.getQueryData(qk.reviews)).toEqual([]);
   });
 
-  it("distinguishes saving completed edits from refreshing feedback", async () => {
+  it("saves completed edits or completes a review without AI feedback", async () => {
     const state = mockReviews([reviewFor("completed")]);
     const onCompleted = vi.fn();
-    vi.spyOn(services, "completeReview").mockResolvedValue(report);
+    vi.spyOn(services, "completeReviewWithoutFeedback").mockResolvedValue(reviewFor("completed"));
     render(
       <ReviewEditor
         week={WEEK}
@@ -193,30 +180,24 @@ describe("journal edit and deletion flows", () => {
       { wrapper: clientWrapper() },
     );
 
-    expect(screen.getByRole("button", { name: "Refresh feedback" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Save changes without refreshing feedback" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Complete review" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("4. What did I learn about myself?"), {
       target: { value: "Save without refreshing" },
     });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Save changes without refreshing feedback" }),
-    );
-    expect(
-      await screen.findByText("Changes saved; feedback was not refreshed"),
-    ).toBeInTheDocument();
-    expect(services.completeReview).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(await screen.findByText("Changes saved")).toBeInTheDocument();
+    expect(services.completeReviewWithoutFeedback).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("4. What did I learn about myself?"), {
       target: { value: "Regenerate from the edited reflection" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Refresh feedback" }));
+    fireEvent.click(screen.getByRole("button", { name: "Complete review" }));
     await waitFor(() => {
       expect(state.saveReview).toHaveBeenLastCalledWith(
         expect.objectContaining({ id: "rev-existing", weekStart: WEEK }),
       );
-      expect(services.completeReview).toHaveBeenCalledWith("rev-existing");
+      expect(services.completeReviewWithoutFeedback).toHaveBeenCalledWith("rev-existing");
       expect(onCompleted).toHaveBeenCalledWith("rev-existing");
     });
   });

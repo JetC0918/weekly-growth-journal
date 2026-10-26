@@ -64,7 +64,7 @@ function Home() {
           {current?.status === "completed" ? (
             <Button asChild size="lg">
               <Link to="/report/$reviewId" params={{ reviewId: current.id }}>
-                View this week's feedback
+                View this week's review
               </Link>
             </Button>
           ) : (

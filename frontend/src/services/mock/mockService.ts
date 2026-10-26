@@ -89,6 +89,21 @@ export function createMockService(
       await wait();
       return suggestFollowUps(input);
     },
+    async completeReviewWithoutFeedback(id) {
+      await wait();
+      const db = load();
+      const review = db.reviews.find((r) => r.id === id);
+      if (!review) throw new Error("Review not found");
+      const hasContent =
+        Object.values(review.answers).some((answer) => answer.trim()) ||
+        review.freeWriting.trim() ||
+        review.followUps.some((item) => item.answer.trim());
+      if (!hasContent) throw new Error("Add a reflection before completing the review.");
+      review.status = "completed";
+      review.updatedAt = new Date().toISOString();
+      save(db);
+      return clone(review);
+    },
     async completeReview(id) {
       await wait();
       const db = load();
