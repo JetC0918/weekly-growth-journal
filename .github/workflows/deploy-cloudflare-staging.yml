@@ -141,6 +141,26 @@ jobs:
               raise SystemExit("Hyperdrive placeholder was not found in the API Worker config.")
           api_text = api_text.replace(placeholder, f'id = "{os.environ["CLOUDFLARE_HYPERDRIVE_ID"]}"')
           api_text = api_text.replace('name = "weekly-growth-journal-api"', 'name = "weekly-growth-journal-api-staging"', 1)
+          api_text += """
+
+          [observability]
+          enabled = true
+          head_sampling_rate = 1
+
+          [observability.logs]
+          enabled = true
+          head_sampling_rate = 1
+          invocation_logs = true
+          persist = true
+
+          [observability.traces]
+          enabled = true
+          head_sampling_rate = 1
+          persist = true
+
+          [observability.issues]
+          enabled = true
+          """
           api_destination.write_text(api_text, encoding="utf-8")
 
           frontend_source = Path("frontend/wrangler.jsonc")
