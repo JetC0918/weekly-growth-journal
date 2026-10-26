@@ -1,14 +1,23 @@
 import type { GrowthService } from "./api";
 import { createAuthService, type AuthService } from "./auth";
 import { createHttpService } from "./httpService";
+import { demoService } from "./mock/demoService";
 
 const auth = createAuthService();
+const httpService = createHttpService(auth);
 
 /** The app-wide API client; all journal requests share the volatile auth session. */
-export const services: GrowthService & { auth: AuthService } = Object.assign(
-  createHttpService(auth),
-  { auth },
-);
+const serviceRouter = new Proxy(httpService, {
+  get(target, property, receiver) {
+    if (property === "auth") return auth;
+    const source = auth.isDemo() ? demoService : target;
+    return Reflect.get(source, property, source ?? receiver);
+  },
+});
+
+export const services = Object.assign(serviceRouter, { auth }) as GrowthService & {
+  auth: AuthService;
+};
 
 export type { GrowthService } from "./api";
 export { ApiError, createHttpService } from "./httpService";
