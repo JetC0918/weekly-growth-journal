@@ -1,6 +1,4 @@
 # Render Blueprint for the full-stack hobby deployment.
-# Use a persistent external PostgreSQL database: Render Free Postgres expires
-# 30 days after creation. DATABASE_URL is intentionally supplied as a secret.
 services:
   - type: web
     name: weekly-growth-journal-api
@@ -23,7 +21,9 @@ services:
       - key: TOKEN_SIGNING_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: weekly-growth-journal-db
+          property: connectionString
       - key: DJANGO_ALLOWED_HOSTS
         value: weekly-growth-journal-api.onrender.com
       - key: CORS_ALLOWED_ORIGINS
@@ -47,3 +47,11 @@ services:
         value: "10000"
       - key: VITE_API_BASE_URL
         value: https://weekly-growth-journal-api.onrender.com/api
+
+databases:
+  - name: weekly-growth-journal-db
+    databaseName: weekly_growth_journal
+    user: weekly_growth_journal_user
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"

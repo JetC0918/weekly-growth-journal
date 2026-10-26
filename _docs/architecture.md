@@ -54,7 +54,7 @@ Test files are present; their presence does not show that they were run or passe
 
 Commands and database prerequisites are listed in [`AGENTS.md`](../AGENTS.md) and [`README.md`](../README.md). No test result is claimed here; check the task's workflow record for verification performed on a particular change.
 
-The CI workflow (`.github/workflows/ci.yml`) runs Django unit and PostgreSQL integration tests, frontend tests/lint/build, Compose configuration and container builds, and dependency audits. The root [`render.yaml`](../render.yaml) configures Render to deploy the API and frontend Docker services after GitHub checks pass. The Render Blueprint uses an external PostgreSQL `DATABASE_URL`; it does not create an expiring Render Free database. These are configured steps, not evidence that CI or deployment ran. No full deployed journal journey is reported. A green CI run proves only the checks reported for that revision.
+The CI workflow (`.github/workflows/ci.yml`) runs Django unit and PostgreSQL integration tests, frontend tests/lint/build, Compose configuration and container builds, and dependency audits. The root [`render.yaml`](../render.yaml) configures Render to deploy the API and frontend Docker services after GitHub checks pass and provision a Render PostgreSQL database. The API receives the database's internal connection URL through the Blueprint. These are configured steps, not evidence that CI or deployment ran. No full deployed journal journey is reported. A green CI run proves only the checks reported for that revision.
 
 ### Reported QA results
 
@@ -72,9 +72,9 @@ These reports do not establish compatibility with a live Render deployment. See 
 
 The active frontend uses the HTTP service. [`frontend/src/services/mock/`](../frontend/src/services/mock/) retains heuristic feedback generation and an injectable key/value store that defaults to memory; it is exercised by mock-service tests, not selected by the app-wide service export. Django under `backend/config/` is the API launch path and uses PostgreSQL. Uvicorn remains a runtime dependency because the backend container uses it to serve Django's ASGI application.
 
-The Render deployment path is defined in [`render.yaml`](../render.yaml) and [`render-deployment.md`](render-deployment.md). It runs the frontend's Node server and the Django ASGI API in separate Docker web services, uses a separately supplied PostgreSQL `DATABASE_URL`, and runs migrations through the backend container startup command. Render free services may sleep when idle; this is a hobby deployment. No Render services, database, deployment, smoke check, or real journal journey are verified yet.
+The Render deployment path is defined in [`render.yaml`](../render.yaml) and [`render-deployment.md`](render-deployment.md). It runs the frontend's Node server and the Django ASGI API in separate Docker web services, provisions Render Postgres, injects its internal URL as `DATABASE_URL`, and runs migrations through the backend container startup command. Render free services may sleep when idle, and its free database expires after 30 days; this is a hobby deployment. No Render services, database, deployment, smoke check, or real journal journey are verified yet.
 
-General production configuration and backup/restore preparation are in [`private-deployment.md`](private-deployment.md). For Render, configure the Neon PostgreSQL URL and verify service origins, migrations, CORS, synthetic user flows, backups, and restore before relying on the deployment. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No successful release or deployed environment is asserted here.
+General production configuration and backup/restore preparation are in [`private-deployment.md`](private-deployment.md). For Render, sync the Blueprint and verify service origins, migrations, CORS, synthetic user flows, backups, and restore before relying on the deployment. Production CORS checks exist locally; deployed origin/preflight behavior remains unverified. No successful release or deployed environment is asserted here.
 
 ## Observability
 
