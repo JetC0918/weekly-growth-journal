@@ -92,15 +92,15 @@ deployed and checked.
 
 ## Task records
 
-### 2026-10-26 — Close remaining rubric evidence gaps except deployment
+### 2026-10-26 — Close remaining project evidence gaps except deployment
 
-- **Task/prompt (summary):** User asked to fix the remaining 1/2 rubric areas:
+- **Task/prompt (summary):** User asked to complete remaining project areas:
   AI workflow, API contract, CI/CD, agent extension pack, security/audit/DevOps
   hardening, and observability. Deployment was explicitly excluded.
 - **Baseline/scope:** Started from `676c00a` on `main`. Preserved a pre-existing
   unrelated edit in `_docs/team/software-engineer.md`. Did not perform deployment.
-- **Context:** Read project instructions, process and testing guidance, rubric
-  assessment thread, active OpenAPI/client/Django routes and serializers,
+- **Context:** Read project instructions, process and testing guidance, a prior
+  project assessment thread, active OpenAPI/client/Django routes and serializers,
   security-audit skill guidance, existing audit/observability docs, and CI config.
   Independent source reviews compared the API contract with implementation and
   reviewed auth, ownership, browser token handling, telemetry, and extension
@@ -138,9 +138,9 @@ deployed and checked.
   results, and a correlated Grafana journey remain unverified. Deployment work
   was excluded as requested.
 
-### 2026-10-26 — Close containerization, integration, and CI/CD rubric gaps
+### 2026-10-26 — Close containerization, integration, and CI workflow gaps
 
-- **Task/prompt (summary):** User asked to work on three rubric items: full-app
+- **Task/prompt (summary):** User asked to work on three project items: full-app
   containerization, clearly separated integration testing, and CI/CD; the user
   approved preparing deployment automation. No GitHub issue was supplied.
 - **Baseline/scope:** Started from `b02cbe7` on `main`. The full Docker Compose
@@ -148,7 +148,7 @@ deployed and checked.
   Django, and the production-built frontend started healthy, and register/review
   API flows plus browser-facing endpoints were smoke-checked. Other uncommitted
   observability/security-review work was present in the shared tree and is outside
-  this rubric change.
+  this update.
 - **Acceptance criteria:** Compose supports the whole app; Django/PostgreSQL API
   integration coverage is tagged, separately runnable, and documented; PR/main
   CI checks backend, frontend, and container builds; deployment configuration
@@ -185,7 +185,7 @@ deployed and checked.
   reported no known vulnerabilities; Bun audit reported 25 frontend advisories
   before its optional workflow job was removed. No GitHub Actions run,
   deployment, or managed database check was observed.
-- **Outcome:** Rubric implementation passed local QA. Account resources, GitHub
+- **Outcome:** The implementation passed local QA. Account resources, GitHub
   secrets/variables, build compatibility, and deployed checks remain unverified.
   No production deployment is claimed.
 

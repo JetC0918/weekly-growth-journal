@@ -134,32 +134,6 @@ See [`backend/README.md`](backend/README.md) for database configuration.
 - `_docs/team/` — PM, engineer, and QA role instructions.
 - `agent-capabilities/`, `agent-hooks/`, `mcp-server/`, `plugins/`, and `docs/agent-extension-pack.md` — reusable local-first agent extension pack and its permission/data policies.
 
-## Rubric evidence map
-
-The project rubric is a draft. This map points reviewers to implementation and
-verification evidence and calls out checks that still need a real review or
-runtime result. A configured workflow or dashboard is not evidence that it ran.
-
-| Rubric area | Max points | Evidence and current limit |
-| --- | ---: | --- |
-| Problem description | 2 | The [problem](#the-problem) and [expected behavior](#expected-behavior) sections describe the user need and product flow; broader scope is in [`_docs/specs.md`](_docs/specs.md). |
-| AI-assisted development workflow | 2 | [`_docs/ai-development-workflow.md`](_docs/ai-development-workflow.md) records context, task summaries, handoffs, AI review, and verification. **Human review is not yet recorded**; add reviewer, date, decision, and any requested changes after review. |
-| Technologies and architecture | 2 | [`_docs/architecture.md`](_docs/architecture.md) describes the frontend, Django API, PostgreSQL, containers, CI, and deployment setup. |
-| Frontend | 3 | `frontend/` contains the TanStack Start app, centralized `GrowthService` transport, and tests. Run frontend tests with `cd frontend && bun run test`; run `bun run lint` for linting. |
-| API contract | 2 | [`openapi.yaml`](openapi.yaml) describes the HTTP contract; Django routes, serializers, and frontend service implement it. |
-| Backend | 3 | `backend/` contains the Django/DRF API and tests for authentication, health, journal ownership, persistence, and provider behavior. See [`backend/README.md`](backend/README.md). |
-| Database integration | 2 | Django models and migrations persist account-owned journal data in PostgreSQL; configuration is documented in [`backend/README.md`](backend/README.md). |
-| Containerization | 2 | [`docker-compose.yml`](docker-compose.yml) runs PostgreSQL, the API, and frontend together; see [Run the full app with Docker](#run-the-full-app-with-docker). |
-| Integration testing | 2 | Django integration tests use the `integration` tag and a PostgreSQL test database. The separate commands are in [Run services directly](#run-services-directly). |
-| Deployment | 2 | The [live frontend](https://weekly-growth-journal-frontend.onrender.com/) and [API health endpoint](https://weekly-growth-journal-api.onrender.com/api/health/) are available on Render. A full authenticated journal journey and database-backed smoke test still need to be recorded. |
-| CI/CD | 2 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) defines test, build, and audit jobs. [`render.yaml`](render.yaml) configures Render deployment after checks pass. Link or record a successful run for the exact revision being reviewed. |
-| Agent extension pack | 2 | [`docs/agent-extension-pack.md`](docs/agent-extension-pack.md) indexes the reusable capability, specialist, MCP server, hook, permission notes, and AI data policy. |
-| Security, audit, and DevOps hardening | 2 | [`_docs/security-audit/run-4/REPORT.md`](_docs/security-audit/run-4/REPORT.md) and its `evidence/` directory contain the latest audit evidence and limits. Extension boundaries are in [`docs/permissions.md`](docs/permissions.md); AI data handling is in [`docs/ai-tool-data-policy.md`](docs/ai-tool-data-policy.md). |
-| Reproducibility | 2 | Setup, run, test, and deployment instructions are in this README, [`AGENTS.md`](AGENTS.md), [`backend/README.md`](backend/README.md), and [`_docs/render-deployment.md`](_docs/render-deployment.md). |
-| Observability | 2 | [`_docs/observability.md`](_docs/observability.md) describes OpenTelemetry and the Grafana/Prometheus/Loki/Tempo stack. **A correlated journey in Grafana is not yet recorded.** |
-| Alerting on user impact | 1 | **Not configured yet.** Add and demonstrate an alert for a user-facing failure or elevated error/latency signal. |
-| On-call agent | 2 | **Not implemented yet.** There is no alert-triggered agent diagnosis and verified fix recorded. |
-
 ## Development workflow
 
 The project uses AI coding assistance with repository instructions and a documented PM/engineer/QA workflow. See [`_docs/ai-development-workflow.md`](_docs/ai-development-workflow.md) for the evidence record format and currently recorded evidence, and [`AGENTS.md`](AGENTS.md) and [`_docs/process.md`](_docs/process.md) for project instructions.
