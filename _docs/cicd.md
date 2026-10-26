@@ -28,6 +28,8 @@ confirmation input, and run it. It deploys `weekly-growth-journal-api-staging`
 and `weekly-growth-journal-frontend-staging` using the `cloudflare-staging`
 GitHub Environment. It never runs database migrations; apply and verify them
 against the staging database from a trusted environment before deploying.
+The staging API config enables persisted Workers logs, invocation logs, traces,
+and issue detection at a 100% sampling rate to help diagnose staging failures.
 
 Configure the `cloudflare-staging` Environment with these variables:
 
