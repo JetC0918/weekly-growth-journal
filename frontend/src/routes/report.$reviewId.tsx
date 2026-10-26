@@ -83,8 +83,11 @@ function ReportPage() {
         <p className="mt-2 text-sm text-muted-foreground">
           {report ? (
             <>
-              Generated from your own words. <span className="font-medium text-observation-foreground">Observations</span> restate what you wrote;{" "}
-              <span className="font-medium text-hypothesis-foreground">hypotheses</span> are interpretations that may be wrong — accept, reject or correct them.
+              Generated from your own words.{" "}
+              <span className="font-medium text-observation-foreground">Observations</span> restate
+              what you wrote;{" "}
+              <span className="font-medium text-hypothesis-foreground">hypotheses</span> are
+              interpretations that may be wrong — accept, reject or correct them.
             </>
           ) : (
             "Your reflection is saved and complete. No AI feedback report was generated."
